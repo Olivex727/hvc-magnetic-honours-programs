@@ -1,4 +1,10 @@
 """
+Get current directory operating path
+"""
+import os
+path = os.path.abspath(".").replace("\\","/")
+
+"""
 Quick-and-dirty HVC
 """
 from astropy.coordinates import SkyCoord
@@ -24,7 +30,7 @@ def format_sexagesimal(coord):
     return f"{ra_formatted} {dec_formatted}"
 
 # Read the VOTable file
-table = parse_single_table('./catalogues/vizier_Moss2013_HVCs.vot').to_table()
+table = parse_single_table(path+'/catalogues/vizier_Moss2013_HVCs.vot').to_table()
 
 # Mask to decent sized area
 #mask = (table['Area']>1) & (table['Area']<np.pi)
@@ -37,14 +43,14 @@ table_big_HVCs = table[mask]
 ra_dec = [format_sexagesimal(f"{row['RAJ2000']} {row['DEJ2000']}") for row in table_big_HVCs]
 
 # Write out
-with open('./big_HVC_coordinates_area_greater_than_1_sqdeg.txt', 'w') as file:
+with open(path+'/big_HVC_coordinates_area_greater_than_1_sqdeg.txt', 'w') as file:
     for coordinate in ra_dec:
         file.write(coordinate + '\n')
 
 """
 Now run the POSSUM X-matcher
 """
-result = subprocess.run(['python', '/Users/canders/Dropbox/Scripts/python/POSSUM_coverage_cmdline.py', './big_HVC_coordinates_area_greater_than_1_sqdeg.txt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+result = subprocess.run(['python', '/Users/canders/Dropbox/Scripts/python/POSSUM_coverage_cmdline.py', path+'/big_HVC_coordinates_area_greater_than_1_sqdeg.txt'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 return_code = result.returncode
 stdout = result.stdout
 stderr = result.stderr
@@ -52,4 +58,4 @@ stderr = result.stderr
 """
 Now load in the output from the X-matcher 
 """
-observed_HVCs_table = Table.read('./Observed_HVC_positions_SBIDs_beams.txt',format='ascii')
+observed_HVCs_table = Table.read(path+'/Observed_HVC_positions_SBIDs_beams.txt',format='ascii')
