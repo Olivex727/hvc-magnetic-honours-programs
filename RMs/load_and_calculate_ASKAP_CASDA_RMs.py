@@ -23,9 +23,10 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 ######################### SETTINGS, PARAMS, FUNCTIONS ####################################
 ##########################################################################################
 
-from group_proj_settings import basedir
+from group_proj_settings import *
 from group_proj_parameters import *
-from group_proj_functions import load_and_parse_fits, load_and_parse_noise_spectra_fits, parse_polarisation, include_sbids_band1_POSSUM_full
+from group_proj_functions import *
+from group_proj_sbidness import *
 #warnings.simplefilter('ignore', category=VerifyWarning)
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 #warnings.simplefilter('ignore', category=AstropyWarning)
