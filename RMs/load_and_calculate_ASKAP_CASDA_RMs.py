@@ -24,8 +24,8 @@ warnings.filterwarnings('ignore', category=UserWarning, append=True)
 ##########################################################################################
 
 from group_proj_settings import basedir
-from group_proj_parameters import include_sbids_band1_POSSUM_full
-from group_proj_functions import load_and_parse_fits, load_and_parse_noise_spectra_fits, parse_polarisation
+from group_proj_parameters import *
+from group_proj_functions import load_and_parse_fits, load_and_parse_noise_spectra_fits, parse_polarisation, include_sbids_band1_POSSUM_full
 #warnings.simplefilter('ignore', category=VerifyWarning)
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 #warnings.simplefilter('ignore', category=AstropyWarning)

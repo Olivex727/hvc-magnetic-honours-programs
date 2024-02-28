@@ -46,7 +46,7 @@ import random
 import bootstrapped.bootstrap as bs
 import bootstrapped.stats_functions as bs_stats
 
-import healpy as hp
+#import healpy as hp
 import h5py
 import dask
 from dask.distributed import Client
@@ -244,7 +244,7 @@ def is_RM_outlier_zscore(rms, rm_errors, specific_rm, thresh=20, tolerance=1e-5)
 		True if the specific RM is an outlier, False otherwise
 	"""
 	# Normalize the RM values by their uncertainties
-	normalized_rms = rms / errors
+	normalized_rms = rms / rm_errors
 
 	# Apply sigma clipping to the normalized RMs
 	clipped_data = sigma_clip(normalized_rms, sigma=thresh, maxiters=None, cenfunc=np.median)
