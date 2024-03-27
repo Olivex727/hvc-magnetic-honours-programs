@@ -17,3 +17,6 @@ class honours_plot:
 
         plt.scatter(rms_pos[0] * scale, rms_pos[1] * scale, s=rms_pos[2], c=(1, 1, 1, 0), edgecolors='red', linewidth=2)
         plt.scatter(rms_neg[0] * scale, rms_neg[1] * scale, s=-1 * rms_neg[2], c=(1, 1, 1, 0), edgecolors='blue', linewidth=2)
+
+    def hi():
+        print("Hello World!")
