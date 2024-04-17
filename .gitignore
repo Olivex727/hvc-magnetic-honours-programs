@@ -1,3 +1,7 @@
+# Large files
+data_catalog/*
+data_preprocessed/*
+
 # VS Code Projects
 *.code-workspace
 
