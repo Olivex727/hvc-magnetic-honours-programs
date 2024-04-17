@@ -1,0 +1,17 @@
+Planned structure for HVC snapshot function:
+
+Get position in sky as (posra, posdec)
+
+Get corner point as (posra+dx, posdec+dy)
+
+From corners:
+- Filter the RM table to those specific region
+- Crop the HI image to specific region
+- Crop the H-alpha image to specific region
+- Crop foreground image to specific region
+- Filter K-Space and FFT
+- Crop foreground image to specific region
+- Correct for foreground RMs
+
+Display information
+
