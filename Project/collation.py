@@ -24,8 +24,8 @@ class file_find:
     def get_RMs(file="../data_catalog/CASDA_RMs.ecsv"):
         return ascii.read(file)
 
-    def get_HI_emission():
-        hdu = fits.open("../data_catalog/hi4pi-hvc-nhi-ait.fits")[0]
+    def get_HI_emission(h1_img):
+        hdu = fits.open(h1_img)[0]
         return hdu
     
     def get_HVC_locations(hvc_area_range=(1, np.pi), full_hvc_range=False):
@@ -65,7 +65,7 @@ class file_find:
 
 class collator:
 
-    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data=""):
+    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data="", h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
         print("Gathering data ...")
         print("Getting H-alpha emission")
         H_alpha = file_find.get_H_alpha()
@@ -73,19 +73,20 @@ class collator:
         RMs = 0
         if load_data:
             #"../data_processed/proc_rms.ecsv"
-            RMs = file_find.get_RMs(load_data)
+            RMs = file_find.get_RMs(load_data+".ecsv")
         else:
             RMs_raw = file_find.get_RMs()
             RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
         print("Getting HVC location data")
         HVCs = file_find.get_HVC_locations(hvc_area_range, full_hvc_range)
         print("Getting HI emission")
-        HIem = file_find.get_HI_emission()
+        HIem = file_find.get_HI_emission(h1_img)
         print("Interpolating")
         interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation)
         if save_data:
             print("Saving processed RM table")
             collator.write_processed(RMs, save_data)
+        print("Collation complete")
         return RMs, HVCs, HIem, H_alpha[0], interp
     
     def collate(RMs, Ha_img, Ha_err):

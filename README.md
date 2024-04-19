@@ -19,6 +19,10 @@ In the main directory, there are a few files of interest:
 
 All other files and directories present contain code not directly used in the final product. Most of it is the original investigation work.
 
+## Large files
+
+Due to GitHub size limits, images pertaining to the HI sky, H-alpha sky, and the interpolated foreground FITS are not uploaded to github. This includes effectively all files in data_catalog and data_preprocessed. In future commits I will list which files are missing from the repository for you to download if needed.
+
 ## Coding permissions
 
 This repository should only be edited by myself (Olivia), Craig Anderson, and Naomi McClure-Griffiths. If you find that you can edit documents in this repository, please notify me and do not submit any commits.
