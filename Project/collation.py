@@ -15,9 +15,12 @@ from astropy.coordinates import SkyCoord
 from astropy.io.votable import parse_single_table
 
 from astropy.units import astrophys as astru
+from astropy import units as u
 
-from foreground import foreground_remover as fr, interpolate as intp
+from foreground import foreground_remover as fgrm, interpolate as intp
 from wcs import image_transform as it
+
+from plotting import honours_plot as hplt
 
 class file_find:
 
@@ -61,11 +64,12 @@ class file_find:
     
     def get_interpolation(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True):
         interpolation, error = intp.interpolate(RMs, use_H_alpha, H_alpha, calculate_interpolation)
-        return [interpolation, error, fr.get_k_space(interpolation.data)]
+        return {"interpolation":interpolation, "error":error, "k-space":fgrm.get_k_space(interpolation.data)}
 
 class collator:
 
     def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data="", h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
+        print("=== WHOLE-SKY DATA COLLATION ===")
         print("Gathering data ...")
         print("Getting H-alpha emission")
         H_alpha = file_find.get_H_alpha()
@@ -87,7 +91,7 @@ class collator:
             print("Saving processed RM table")
             collator.write_processed(RMs, save_data)
         print("Collation complete")
-        return RMs, HVCs, HIem, H_alpha[0], interp
+        return {"RMs":RMs, "HVCs":HVCs, "HI":HIem, "H-alpha":H_alpha[0], "interpolation":interp}
     
     def collate(RMs, Ha_img, Ha_err):
         Ha_eco = []
@@ -112,18 +116,94 @@ class collator:
 
 class hvc_snapshot:
 
-    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp):
-        return 0
+    # IMPORTANT: fourier transforms are linear, thus the uncertainties in the interpolation remain unchanged after filtering
+    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, hvc_area_range=(1, np.pi)):
+        print("=== HVC SNAPSHOT ===")
+        print("Gathering data ...")
+        if not custom_selection:
+            selected_HVC = HVCs[hvc_index]
+        else:
+            selected_HVC = custom_selection
+        print("Determining corners")
+        corners = hvc_snapshot.get_corners(selected_HVC)
+        if not corners:
+            print("Could not resolve - HVC is on edge of sky")
+            return 0
+        print("Cropping H-alpha")
+        Ha = hvc_snapshot.crop_wcs(corners, H_alpha)
+        print("Cropping HI")
+        H1 = hvc_snapshot.crop_wcs(corners, HIem)
+        print("Cropping interpolation")
+        intp_map = hvc_snapshot.crop_wcs(corners, interp["interpolation"])
+        print("Filtering RMs")
+        RMs_filtered = hvc_snapshot.rm_filter(corners, RMs)
+        print("Correcting foreground")
+        intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], RMs_filtered, hvc_area_range)
+        print("Snipping complete")
+        return {"corners":corners, "H-alpha":Ha, "HI":H1, "interpolation_raw":intp_map, "interpolation_corrected":intp_cor, "RMs":RMs_filtered}
     
-    def get_corners(hvc_index, HVCs):
-        return 0
+    # FIXME: Test if correct
+    def get_corners(selected_HVC):
+        dx = selected_HVC['dx']
+        dy = selected_HVC['dy']
+
+        # Twice the area of the HVC to ensure it's including all of the HVCs
+        di = max(dx, dy) * u.deg
+
+        centre_coord = selected_HVC['SkyCoord'].galactic
+
+        # Calculate upper corner coordinate
+        new_coord = SkyCoord(centre_coord.l+di*2, centre_coord.b+di*2, frame='galactic')
+
+        if centre_coord.l > new_coord.l or centre_coord.b > new_coord.b:
+            return False
+        
+        return [centre_coord, new_coord]
     
-    def crop_wcs(corners, image):
-        return 0
-    
+    def crop_wcs(corners, image, plot=False):
+
+        # Get corners in terms of images
+        wcs = WCS(image.header)
+        pix_down = list(np.array(list(map(int, it.get_pixel(wcs, corners[0]))))-1)
+        pix_up = list(np.array(list(map(int, it.get_pixel(wcs, corners[1]))))-1)
+
+        def crop_img_1d(img, pixel_up, pixel_down):
+            img = img[pixel_down[1]:pixel_up[1]]
+            return img
+
+        def crop_img(img, pixel_up, pixel_down):
+            img = img[pixel_down[1]:pixel_up[1]] if pixel_down[1]<pixel_up[1] else img[pixel_up[1]:pixel_down[1]]
+            img = np.transpose(img)
+            img = img[pixel_down[0]:pixel_up[0]] if pixel_down[0]<pixel_up[0] else img[pixel_up[0]:pixel_down[0]]
+            img = np.transpose(img)
+            return img
+        
+        if plot:
+            print(pix_up)
+            print(pix_down)
+            hplt.plot_image_crop(image, crop_img(image.data, pix_up, pix_down), pix_up, pix_down)
+        
+        return crop_img(image.data, pix_up, pix_down)
+
+    # FIXME: Test if correct
     def rm_filter(corners, RMs):
-        return 0
+        gal_RM_locations = RMs["ra_dec_obj"].galactic
+        mask = list(map(lambda rm_loc: corners[0].l < rm_loc.l < corners[1].l and corners[0].b < rm_loc.b < corners[1].b, gal_RM_locations))
+        print(str(sum(mask))+" RM grid points found")
+        return RMs
     
-    def foreground_correction(hvc_index, HVCs, interpolation, RMs):
-        return 0
+    # Assumes RMs are already corrected
+    def foreground_correction(corners, interpolation, k_space, RMs, hvc_area_range=(1, np.pi)):
+
+        # Filter the k-space and get corrected foreground
+        new_k_space = fgrm.filter_k_space(k_space, hvc_area_range)
+        cor_fg = fgrm.restore_foreground(new_k_space, interpolation)
+
+        # Correct RMs
+        cor_RMs = fgrm.get_corrected_RMs(interpolation, cor_fg, RMs)
+
+        # Take snapshots of corrected interpolation
+        snap_cor = hvc_snapshot.crop_wcs(corners, cor_fg)
+
+        return snap_cor, cor_RMs
     

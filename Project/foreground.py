@@ -2,6 +2,8 @@
 
 from astropy.io import fits
 from scipy import fft
+import numpy as np
+from dict2obj import Dict2Obj
 
 class interpolate:
     def interpolate(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True):
@@ -22,22 +24,35 @@ class foreground_remover:
     def get_k_space(interpolation):
         return fft.fft2(interpolation)
     
-    def punch_annulus(base, inner_radius, outer_radius, centre=-1):
-        if centre == -1:
-            centre = (len(base)/2, len(base)/2)
-
-        for x in range(len(base)):
-            for y in range(len(base[x])):
+    def punch_annulus(base, inner_radius, outer_radius, centre=False):
+        if not centre:
+            centre = (len(base[0])/2, len(base)/2)
+        
+        for y in range(len(base)):
+            for x in range(len(base[y])):
                 if inner_radius ** 2 < ((x-centre[0]) ** 2 + (y-centre[1]) ** 2) < outer_radius ** 2:
-                    base[x][y] = 0
+                    base[y][x] = 0
     
         return base
     
-    def filter_k_space(interpolation):
-        return 0
+    def filter_k_space(k_space, size_params=(1,np.pi)):
+        annulus_space = (k_space.real * 0) + 1
+        annulus_space = foreground_remover.punch_annulus(annulus_space, scale(size_params[0]), scale(size_params[1]))
+        new_k_space = annulus_space*k_space
+        return new_k_space
     
     def get_corrected_image(k_space):
-        return 0
+        return fft.ifft2(k_space)
     
-    def get_corrected_RMs(k_space, RMs):
-        return 0
+    # Assumes a pre-filtered k-space
+    def restore_foreground(k_space, interpolation):
+        corr_fg = Dict2Obj({"header":interpolation.header, "data":foreground_remover.get_corrected_image(k_space).real})
+        return corr_fg
+    
+    def get_corrected_RMs(interpolation_pre, interpolation_post, RMs):
+        return RMs
+    
+# Define a scaling function to convert real size -> k-space size
+def scale(value):
+    scl = 3000
+    return value * scl

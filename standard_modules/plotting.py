@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 class honours_plot:
     """
@@ -20,3 +21,16 @@ class honours_plot:
 
     def hi():
         print("Hello World!")
+
+    def plot_image_crop(image, image_cropped, pix_up, pix_down):
+        plt.imshow(image.data)
+        plt.gca().add_patch(Rectangle(
+            (pix_up[0], pix_down[1]),
+            np.abs(pix_up[0]-pix_down[0]),
+            np.abs(pix_up[1]-pix_down[1]),
+            linewidth=1,edgecolor='r',facecolor='none'
+            ))
+        plt.show()
+
+        plt.imshow(image_cropped)
+        plt.show()
