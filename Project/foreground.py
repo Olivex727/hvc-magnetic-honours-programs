@@ -71,6 +71,7 @@ class foreground_remover:
         return RMs
     
 # Define a scaling function to convert real size -> k-space size
+# FIXME: implement function
 def scale(value):
     scl = 3000
     return value * scl

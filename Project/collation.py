@@ -10,11 +10,8 @@ import sys
 sys.path.append('C://Users/olive/OneDrive - Australian National University/Honours-Olivia/Programs/honours/standard_modules')
 
 import numpy as np
-import math
 
 from astropy.io import ascii
-
-from astropy.wcs import WCS
 from astropy.io import fits
 
 from astropy.coordinates import SkyCoord
@@ -175,7 +172,7 @@ class hvc_snapshot:
     def crop_wcs(corners, image, plot=False):
 
         # Get corners in terms of images
-        wcs = WCS(image.header)
+        wcs = it.wcs(image.header)
         pix_down = list(np.array(list(map(int, it.get_pixel(wcs, corners[0]))))-1)
         pix_up = list(np.array(list(map(int, it.get_pixel(wcs, corners[1]))))-1)
 
