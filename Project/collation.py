@@ -150,7 +150,7 @@ class hvc_snapshot:
             print("Filtering RMs")
             RMs_filtered = hvc_snapshot.rm_filter(corners, RMs)
             print("Correcting foreground")
-            intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], RMs_filtered, hvc_area_range)
+            intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], interp["error"], RMs_filtered, hvc_area_range)
             print("Snipping complete")
             return {"corners":corners, "H-alpha":Ha, "HI":H1, "interpolation_raw":intp_map, "interpolation_corrected":intp_cor, "RMs":RMs_filtered}
     
@@ -197,22 +197,29 @@ class hvc_snapshot:
         
         return crop_img(image.data, pix_up, pix_down)
 
-    # FIXME: Test if correct
+    # FIXME: Test for validity
     def rm_filter(corners, RMs):
+
+        # Create mask
         gal_RM_locations = RMs["ra_dec_obj"].galactic
         mask = list(map(lambda rm_loc: corners[0].l < rm_loc.l < corners[1].l and corners[0].b < rm_loc.b < corners[1].b, gal_RM_locations))
+
         print(str(sum(mask))+" RM grid points found")
-        return RMs
+
+        # Filter the RMs
+        filtered_RMs = RMs[mask]
+
+        return filtered_RMs
     
     # Assumes RMs are already corrected
-    def foreground_correction(corners, interpolation, k_space, RMs, hvc_area_range=(1, np.pi)):
+    def foreground_correction(corners, interpolation, k_space, interpolation_std, RMs, hvc_area_range=(1, np.pi)):
 
         # Filter the k-space and get corrected foreground
         new_k_space = fgrm.filter_k_space(k_space, hvc_area_range)
         cor_fg = fgrm.restore_foreground(new_k_space, interpolation)
 
         # Correct RMs
-        cor_RMs = fgrm.get_corrected_RMs(interpolation, cor_fg, RMs)
+        cor_RMs = fgrm.get_corrected_RMs(interpolation, cor_fg, interpolation_std, RMs)
 
         # Take snapshots of corrected interpolation
         snap_cor = hvc_snapshot.crop_wcs(corners, cor_fg)
