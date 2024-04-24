@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# TODO:
+# - Find scaling constant to convert from physical sizes to k-space
+# - Find HVCs in RM range
+# - Test RM function
+# - Test the corner functions
+
 import sys
 sys.path.append('C://Users/olive/OneDrive - Australian National University/Honours-Olivia/Programs/honours/standard_modules')
 
@@ -21,6 +27,10 @@ from foreground import foreground_remover as fgrm, interpolate as intp
 from wcs import image_transform as it
 
 from plotting import honours_plot as hplt
+
+import warnings
+from astropy.wcs import FITSFixedWarning as fitswarn
+verwarn = fits.verify.VerifyWarning
 
 class file_find:
 
@@ -69,29 +79,30 @@ class file_find:
 class collator:
 
     def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data="", h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
-        print("=== WHOLE-SKY DATA COLLATION ===")
-        print("Gathering data ...")
-        print("Getting H-alpha emission")
-        H_alpha = file_find.get_H_alpha()
-        print("Collating RMs")
-        RMs = 0
-        if load_data:
-            #"../data_processed/proc_rms.ecsv"
-            RMs = file_find.get_RMs(load_data+".ecsv")
-        else:
-            RMs_raw = file_find.get_RMs()
-            RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
-        print("Getting HVC location data")
-        HVCs = file_find.get_HVC_locations(hvc_area_range, full_hvc_range)
-        print("Getting HI emission")
-        HIem = file_find.get_HI_emission(h1_img)
-        print("Interpolating")
-        interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation)
-        if save_data:
-            print("Saving processed RM table")
-            collator.write_processed(RMs, save_data)
-        print("Collation complete")
-        return {"RMs":RMs, "HVCs":HVCs, "HI":HIem, "H-alpha":H_alpha[0], "interpolation":interp}
+        with warnings.catch_warnings(action="ignore", category=verwarn):
+            print("=== WHOLE-SKY DATA COLLATION ===")
+            print("Gathering data ...")
+            print("Getting H-alpha emission")
+            H_alpha = file_find.get_H_alpha()
+            print("Collating RMs")
+            RMs = 0
+            if load_data:
+                #"../data_processed/proc_rms.ecsv"
+                RMs = file_find.get_RMs(load_data+".ecsv")
+            else:
+                RMs_raw = file_find.get_RMs()
+                RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
+            print("Getting HVC location data")
+            HVCs = file_find.get_HVC_locations(hvc_area_range, full_hvc_range)
+            print("Getting HI emission")
+            HIem = file_find.get_HI_emission(h1_img)
+            print("Interpolating")
+            interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation)
+            if save_data:
+                print("Saving processed RM table")
+                collator.write_processed(RMs, save_data)
+            print("Collation complete")
+            return {"RMs":RMs, "HVCs":HVCs, "HI":HIem, "H-alpha":H_alpha[0], "interpolation":interp}
     
     def collate(RMs, Ha_img, Ha_err):
         Ha_eco = []
@@ -118,29 +129,30 @@ class hvc_snapshot:
 
     # IMPORTANT: fourier transforms are linear, thus the uncertainties in the interpolation remain unchanged after filtering
     def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, hvc_area_range=(1, np.pi)):
-        print("=== HVC SNAPSHOT ===")
-        print("Gathering data ...")
-        if not custom_selection:
-            selected_HVC = HVCs[hvc_index]
-        else:
-            selected_HVC = custom_selection
-        print("Determining corners")
-        corners = hvc_snapshot.get_corners(selected_HVC)
-        if not corners:
-            print("Could not resolve - HVC is on edge of sky")
-            return 0
-        print("Cropping H-alpha")
-        Ha = hvc_snapshot.crop_wcs(corners, H_alpha)
-        print("Cropping HI")
-        H1 = hvc_snapshot.crop_wcs(corners, HIem)
-        print("Cropping interpolation")
-        intp_map = hvc_snapshot.crop_wcs(corners, interp["interpolation"])
-        print("Filtering RMs")
-        RMs_filtered = hvc_snapshot.rm_filter(corners, RMs)
-        print("Correcting foreground")
-        intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], RMs_filtered, hvc_area_range)
-        print("Snipping complete")
-        return {"corners":corners, "H-alpha":Ha, "HI":H1, "interpolation_raw":intp_map, "interpolation_corrected":intp_cor, "RMs":RMs_filtered}
+        with warnings.catch_warnings(action="ignore", category=fitswarn):
+            print("=== HVC SNAPSHOT ===")
+            print("Gathering data ...")
+            if not custom_selection:
+                selected_HVC = HVCs[hvc_index]
+            else:
+                selected_HVC = custom_selection
+                print("Determining corners")
+            corners = hvc_snapshot.get_corners(selected_HVC)
+            if not corners:
+                print("Could not resolve - HVC is on edge of sky")
+                return 0
+            print("Cropping H-alpha")
+            Ha = hvc_snapshot.crop_wcs(corners, H_alpha)
+            print("Cropping HI")
+            H1 = hvc_snapshot.crop_wcs(corners, HIem)
+            print("Cropping interpolation")
+            intp_map = hvc_snapshot.crop_wcs(corners, interp["interpolation"])
+            print("Filtering RMs")
+            RMs_filtered = hvc_snapshot.rm_filter(corners, RMs)
+            print("Correcting foreground")
+            intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], RMs_filtered, hvc_area_range)
+            print("Snipping complete")
+            return {"corners":corners, "H-alpha":Ha, "HI":H1, "interpolation_raw":intp_map, "interpolation_corrected":intp_cor, "RMs":RMs_filtered}
     
     # FIXME: Test if correct
     def get_corners(selected_HVC):
