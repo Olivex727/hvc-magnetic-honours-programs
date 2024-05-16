@@ -3,5 +3,9 @@
     "python.analysis.extraPaths": [
         "./standard_models",
         "./standard_modules"
-    ]
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportMissingModuleSource": "none",
+    }
 }

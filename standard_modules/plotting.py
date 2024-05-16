@@ -22,8 +22,9 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_image_crop(image, image_cropped, pix_up, pix_down, show=True):
+    def plot_image_crop(image, image_cropped, pix_up, pix_down, pix_c=[0, 0], index=-1, show=True):
         plt.imshow(image.data)
+        if not pix_c == [0, 0]: plt.plot(*pix_c, 'bx', ms=1)
         plt.gca().add_patch(Rectangle(
             (pix_up[0], pix_down[1]),
             np.abs(pix_up[0]-pix_down[0]),
@@ -34,6 +35,9 @@ class honours_plot:
             plt.show()
 
         plt.imshow(image_cropped)
+        if not pix_c == [0, 0]: plt.plot((pix_c[0]-pix_up[0]),(pix_c[1]-pix_down[1]), 'rx')
+        if index >= 0: plt.title("HVC index "+str(index))
+
         if show:
             plt.show()
 

@@ -10,11 +10,12 @@ import sys
 sys.path.append('C://Users/olive/OneDrive - Australian National University/Honours-Olivia/Programs/honours/standard_modules')
 
 import numpy as np
+import copy
 
 from astropy.io import ascii
 from astropy.io import fits
 
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 from astropy.io.votable import parse_single_table
 
 from astropy.units import astrophys as astru
@@ -125,7 +126,7 @@ class collator:
 class hvc_snapshot:
 
     # IMPORTANT: fourier transforms are linear, thus the uncertainties in the interpolation remain unchanged after filtering
-    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, hvc_area_range=(1, np.pi)):
+    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, hvc_area_range=(1, np.pi), plot=False):
         with warnings.catch_warnings(action="ignore", category=fitswarn):
             print("=== HVC SNAPSHOT ===")
             print("Gathering data ...")
@@ -139,15 +140,15 @@ class hvc_snapshot:
                 print("Could not resolve - HVC is on edge of sky")
                 return 0
             print("Cropping H-alpha")
-            Ha = hvc_snapshot.crop_wcs(corners, H_alpha)
+            Ha = hvc_snapshot.crop_wcs(corners, H_alpha, index=hvc_index, plot=plot)
             print("Cropping HI")
-            H1 = hvc_snapshot.crop_wcs(corners, HIem)
+            H1 = hvc_snapshot.crop_wcs(corners, HIem, index=hvc_index, plot=plot)
             print("Cropping interpolation")
-            intp_map = hvc_snapshot.crop_wcs(corners, interp["interpolation"])
+            intp_map = hvc_snapshot.crop_wcs(corners, interp["interpolation"], index=hvc_index, plot=plot)
             print("Filtering RMs")
             RMs_filtered = hvc_snapshot.rm_filter(corners, RMs)
             print("Correcting foreground")
-            intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], interp["error"], RMs_filtered, hvc_area_range)
+            intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], interp["error"], RMs_filtered, hvc_area_range, plot=plot, index=hvc_index)
             print("Snipping complete")
             return {"corners":corners, "H-alpha":Ha, "HI":H1, "interpolation_raw":intp_map, "interpolation_corrected":intp_cor, "RMs":RMs_filtered}
     
@@ -162,19 +163,22 @@ class hvc_snapshot:
         centre_coord = selected_HVC['SkyCoord'].galactic
 
         # Calculate upper corner coordinate
-        new_coord = SkyCoord(centre_coord.l+di*2, centre_coord.b+di*2, frame='galactic')
+        new_coord_up = SkyCoord(centre_coord.l+di, centre_coord.b+di, frame='galactic')
+        new_coord_down = SkyCoord(centre_coord.l-di, centre_coord.b-di, frame='galactic')
 
-        if centre_coord.l > new_coord.l or centre_coord.b > new_coord.b:
+        if new_coord_down.l > new_coord_up.l or new_coord_down.b > new_coord_up.b:
             return False
         
-        return [centre_coord, new_coord]
+        return [new_coord_down, new_coord_up, centre_coord]
     
-    def crop_wcs(corners, image, plot=False):
+    def crop_wcs(corners, image, plot=False, index=-1):
 
         # Get corners in terms of images
         wcs = it.wcs(image.header)
         pix_down = list(np.array(list(map(int, it.get_pixel(wcs, corners[0]))))-1)
         pix_up = list(np.array(list(map(int, it.get_pixel(wcs, corners[1]))))-1)
+        if len(corners) > 2: pix_c = list(np.array(list(map(int, it.get_pixel(wcs, corners[2]))))-1)
+        else: pix_c = [0,0]
 
         def crop_img_1d(img, pixel_up, pixel_down):
             img = img[pixel_down[1]:pixel_up[1]]
@@ -190,7 +194,7 @@ class hvc_snapshot:
         if plot:
             print(pix_up)
             print(pix_down)
-            hplt.plot_image_crop(image, crop_img(image.data, pix_up, pix_down), pix_up, pix_down)
+            hplt.plot_image_crop(image, crop_img(image.data, pix_up, pix_down), pix_up, pix_down, pix_c, index)
         
         return crop_img(image.data, pix_up, pix_down)
 
@@ -204,12 +208,12 @@ class hvc_snapshot:
         print(str(sum(mask))+" RM grid points found")
 
         # Filter the RMs
-        filtered_RMs = RMs[mask]
+        filtered_RMs = copy.deepcopy(RMs[mask])
 
         return filtered_RMs
     
     # Assumes RMs are already corrected
-    def foreground_correction(corners, interpolation, k_space, interpolation_std, RMs, hvc_area_range=(1, np.pi)):
+    def foreground_correction(corners, interpolation, k_space, interpolation_std, RMs, hvc_area_range=(1, np.pi), index=-1, plot=False):
 
         # Filter the k-space and get corrected foreground
         new_k_space = fgrm.filter_k_space(k_space, hvc_area_range)
@@ -219,7 +223,56 @@ class hvc_snapshot:
         cor_RMs = fgrm.get_corrected_RMs(interpolation, cor_fg, interpolation_std, RMs)
 
         # Take snapshots of corrected interpolation
-        snap_cor = hvc_snapshot.crop_wcs(corners, cor_fg)
+        snap_cor = hvc_snapshot.crop_wcs(corners, cor_fg, index=index, plot=plot)
 
         return snap_cor, cor_RMs
-    
+
+class collation_tools:
+
+    # WARNING: This function takes a long time to execute, make sure to specify a file to save the list in, so that it only needs to run once.
+    def calculate_HVC_seperation(collated_data, save_file = "../output.txt"):
+        l = len(collated_data['HVCs']) - 1
+        lr = len(collated_data['RMs']) - 1
+        row = 0
+        row2 = 0
+        val = 0
+
+        sep_arr = []
+
+        for hvc in collated_data['HVCs']:
+            val = int(row/l*100)
+            row2 = 0
+
+            minimum = -1
+            for rm in collated_data['RMs']:
+                new = hvc['SkyCoord'].separation(rm['ra_dec_obj'])
+                if minimum == -1 or minimum > new:
+                    minimum = new
+        
+                row2 = row2 + 1
+                print("RM loop: "+str(int(row2/lr*100))+"%; HVC loop: "+str(val)+"% \r", sep="", end="", flush=True)
+
+            sep_arr.append(minimum)
+
+            print("RM loop: 100%; HVC loop: "+str(val)+"% \r", sep="", end="", flush=True)
+            row = row + 1
+
+        with open("output.txt", "w") as txt_file:
+            for line in sep_arr:
+                txt_file.write(str(line)+"\n")
+        
+    def add_HVC_seperation(hvcs, max_sep=2*np.pi, load_file="../output.txt"):
+        sep_arr = []
+
+        with open("output.txt", "r") as txt_file:
+            sep_arr = txt_file.read().split("\n")[:-1]
+
+        sep_arr = list(map(Angle, sep_arr))
+
+        hvcs = copy.deepcopy(hvcs)
+
+        hvcs.add_column(sep_arr, name="Nearest RM")
+
+        hvcs = hvcs[hvcs["Nearest RM"].value < max_sep]
+
+        return hvcs
