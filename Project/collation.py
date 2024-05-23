@@ -14,6 +14,7 @@ import copy
 
 from astropy.io import ascii
 from astropy.io import fits
+from astropy.table import Table
 
 from astropy.coordinates import SkyCoord, Angle
 from astropy.io.votable import parse_single_table
@@ -32,8 +33,24 @@ verwarn = fits.verify.VerifyWarning
 
 class file_find:
 
-    def get_RMs(file="../data_catalog/CASDA_RMs.ecsv"):
-        return ascii.read(file)
+    def get_RMs(file='../data_catalog/main_table_17May2024', ext=".fits"):
+        if ext == ".ecsv": return ascii.read(file+ext) #"../data_catalog/CASDA_RMs.ecsv"
+        if ext == ".fits":
+            # Must manually add the ra_dec_obj column
+            t = Table(fits.open(file+ext)[1].data)
+            t.remove_column('ra_dec_obj.ra')
+            t.remove_column('ra_dec_obj.dec')
+            t['RM'].unit = u.rad / (u.m ** 2)
+            t['RM_uncert'].unit = u.rad / (u.m ** 2)
+            tobj = []
+            l = len(t)
+            for rm_index in range(len(t)):
+                rm_point = t[rm_index]['ra_dec_deg']
+                tobj.append(SkyCoord(ra=rm_point[0]*u.degree, dec=rm_point[1]*u.degree, frame='icrs'))
+                print(str(int(rm_index/l*100))+"% \r", sep="", end="", flush=True)
+            print("Converting coordinates")
+            t.add_column(tobj, 0,'ra_dec_obj')
+            return t
 
     def get_HI_emission(h1_img):
         hdu = fits.open(h1_img)[0]
@@ -76,19 +93,22 @@ class file_find:
 
 class collator:
 
+    # WARNING: Collating the RMs from scratch may take some time, make sure to specify a file to save the list in, and load on all future usages of this function, so that it only needs to run once.
     def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data="", h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
-        with warnings.catch_warnings(action="ignore", category=verwarn):
+        with warnings.catch_warnings(action="ignore", category=verwarn) and warnings.catch_warnings(action="ignore", category=fitswarn):
             print("=== WHOLE-SKY DATA COLLATION ===")
             print("Gathering data ...")
             print("Getting H-alpha emission")
             H_alpha = file_find.get_H_alpha()
-            print("Collating RMs")
+            print("Extracting RMs")
             RMs = 0
             if load_data:
                 #"../data_processed/proc_rms.ecsv"
-                RMs = file_find.get_RMs(load_data+".ecsv")
+                print("Collating RMs")
+                RMs = file_find.get_RMs(load_data, ".ecsv")
             else:
                 RMs_raw = file_find.get_RMs()
+                print("Collating RMs")
                 RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
             print("Getting HVC location data")
             HVCs = file_find.get_HVC_locations(hvc_area_range, full_hvc_range)
@@ -107,8 +127,8 @@ class collator:
         Ha_col = []
         l = len(RMs)
         for row in range(l):
-            ha = it.get_flux_at_point(Ha_img, RMs[row][0])
-            he = it.get_flux_at_point(Ha_err, RMs[row][0])
+            ha = it.get_flux_at_point(Ha_img, RMs[row]['ra_dec_obj'])
+            he = it.get_flux_at_point(Ha_err, RMs[row]['ra_dec_obj'])
 
             # H-alpha data is in rayleighs. 1 R = 1e10 m-2 sr-1 sec-1
             Ha_col.append(ha * astru.R)

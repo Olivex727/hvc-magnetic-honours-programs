@@ -26,6 +26,11 @@ class foreground_remover:
     def get_k_space(interpolation):
         return fft.fft2(interpolation)
     
+    def get_freq_domains(k_space):
+        fy = fft.fftfreq(k_space.shape[0])
+        fx = fft.fftfreq(k_space.shape[1])
+        return fx, fy
+    
     def punch_annulus(base, inner_radius, outer_radius, centre=False):
         if not centre:
             centre = (len(base[0])/2, len(base)/2)
@@ -37,10 +42,40 @@ class foreground_remover:
     
         return base
     
+    def convert_size_to_frequency(theta_hvc, l_shape=8640):
+        R = l_shape / 360
+        f_hvc = 1/(2*theta_hvc*R)
+        return f_hvc
+
+    def convert_frequency_to_pixel(f_range, fftfreq):
+        fftfreq_range = list(map(lambda x: f_range[0] < x < f_range[1], fftfreq))
+        return fftfreq_range
+
+    def punch_crosshatch(base, x_mask, y_mask):
+        for y in range(len(base)):
+            for x in range(len(base[y])):
+                if x_mask[x] or y_mask[y]:
+                    base[y][x] = 0
+    
+        return base
+    
     def filter_k_space(k_space, size_params=(1,np.pi)):
-        annulus_space = (k_space.real * 0) + 1
-        annulus_space = foreground_remover.punch_annulus(annulus_space, scale(size_params[0]), scale(size_params[1]))
-        new_k_space = annulus_space*k_space
+        fx, fy = foreground_remover.get_freq_domains(k_space)
+
+        crosshatch_space = ((k_space.real * 0) + 1)
+        hvc_f_range_pos = tuple(map(foreground_remover.convert_size_to_frequency, size_params))[::-1]
+        hvc_f_range_neg = tuple(map(lambda x: - x, map(foreground_remover.convert_size_to_frequency, size_params)))
+
+        x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fx)
+        y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fy)
+
+        crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
+
+        x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fx)
+        y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fy)
+
+        crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
+        new_k_space = crosshatch_space*k_space
         return new_k_space
     
     def get_corrected_image(k_space):
@@ -69,9 +104,3 @@ class foreground_remover:
         RMs.add_column(pst_fg_list, name="interpolation_cor")
         RMs.add_column(std_fg_list, name="interpolation_unc")
         return RMs
-    
-# Define a scaling function to convert real size -> k-space size
-# FIXME: implement function
-def scale(value):
-    scl = 3000
-    return value * scl
