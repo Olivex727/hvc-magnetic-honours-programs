@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO:
-# - Find scaling constant to convert from physical sizes to k-space
-# - Find HVCs in RM range
-# - Test RM function
-# - Test the corner functions
-
 import sys
 sys.path.append('C://Users/olive/OneDrive - Australian National University/Honours-Olivia/Programs/honours/standard_modules')
 
@@ -56,7 +50,10 @@ class file_find:
         hdu = fits.open(h1_img)[0]
         return hdu
     
-    def get_HVC_locations(hvc_area_range=(1, np.pi), full_hvc_range=False):
+    def get_HVC_locations(load_file='../data_catalog/vizier_Moss2013_HVCs.vot', hvc_area_range=(1, np.pi), full_hvc_range=False, override=False):
+        if override:
+            return ascii.read(load_file)
+
         def format_sexagesimal(coord):
             ra, dec = coord.split()[:3], coord.split()[3:]
             ra_formatted = ':'.join(ra)
@@ -87,38 +84,44 @@ class file_find:
         err = fits.open("../data_catalog/Halpha_error.fits")[0]
         return img, err
     
-    def get_interpolation(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True):
-        interpolation, error = intp.interpolate(RMs, use_H_alpha, H_alpha, calculate_interpolation)
-        return {"interpolation":interpolation, "error":error, "k-space":fgrm.get_k_space(interpolation.data)}
+    def get_interpolation(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True, fourier_correct=True, hvc_area_range=(1, np.pi)):
+        interpolation, error, k_space = intp.interpolate(RMs, use_H_alpha, H_alpha, calculate_interpolation)
+        if fourier_correct: corrected = intp.fourier_interpolate(interpolation, k_space, hvc_area_range)
+        else: corrected = []
+        return {"interpolation":interpolation, "error":error, "k-space":k_space, "corrected":corrected}
 
 class collator:
 
     # WARNING: Collating the RMs from scratch may take some time, make sure to specify a file to save the list in, and load on all future usages of this function, so that it only needs to run once.
-    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data="", h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
-        with warnings.catch_warnings(action="ignore", category=verwarn) and warnings.catch_warnings(action="ignore", category=fitswarn):
+    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data=["", ""], h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
+        with warnings.catch_warnings(): #warnings.catch_warnings(action="ignore", category=verwarn)warnings.catch_warnings(action="ignore", category=fitswarn):
+            warnings.simplefilter("ignore")
             print("=== WHOLE-SKY DATA COLLATION ===")
             print("Gathering data ...")
             print("Getting H-alpha emission")
             H_alpha = file_find.get_H_alpha()
             print("Extracting RMs")
             RMs = 0
-            if load_data:
+            if load_data[0]:
                 #"../data_processed/proc_rms.ecsv"
                 print("Collating RMs")
-                RMs = file_find.get_RMs(load_data, ".ecsv")
+                RMs = file_find.get_RMs(load_data[0], ".ecsv")
             else:
                 RMs_raw = file_find.get_RMs()
                 print("Collating RMs")
                 RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
             print("Getting HVC location data")
-            HVCs = file_find.get_HVC_locations(hvc_area_range, full_hvc_range)
+            if load_data[1]:
+                HVCs = file_find.get_HVC_locations(load_file=load_data[1],override=True)
+            else:
+                HVCs = file_find.get_HVC_locations(hvc_area_range=hvc_area_range, full_hvc_range=full_hvc_range)
             print("Getting HI emission")
             HIem = file_find.get_HI_emission(h1_img)
             print("Interpolating")
-            interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation)
+            interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation, fourier_correct=(not full_hvc_range), hvc_area_range=hvc_area_range)
             if save_data:
                 print("Saving processed RM table")
-                collator.write_processed(RMs, save_data)
+                collation_tools.write_processed(RMs, save_data)
             print("Collation complete")
             return {"RMs":RMs, "HVCs":HVCs, "HI":HIem, "H-alpha":H_alpha[0], "interpolation":interp}
     
@@ -139,40 +142,45 @@ class collator:
         RMs.add_column(Ha_col, index=1, name="H-alpha flux")
         RMs.add_column(Ha_eco, index=1, name="H-alpha flux [Error]")
         return RMs
-    
-    def write_processed(RMs, file):
-        RMs.write(file+".ecsv", format='ascii.ecsv', overwrite=True)  
 
 class hvc_snapshot:
 
     # IMPORTANT: fourier transforms are linear, thus the uncertainties in the interpolation remain unchanged after filtering
-    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, hvc_area_range=(1, np.pi), plot=False):
+    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, selection=None, plot=False):
         with warnings.catch_warnings(action="ignore", category=fitswarn):
             print("=== HVC SNAPSHOT ===")
             print("Gathering data ...")
             if not custom_selection:
                 selected_HVC = HVCs[hvc_index]
             else:
-                selected_HVC = custom_selection
+                selected_HVC = selection
                 print("Determining corners")
             corners = hvc_snapshot.get_corners(selected_HVC)
             if not corners:
                 print("Could not resolve - HVC is on edge of sky")
                 return 0
             print("Cropping H-alpha")
-            Ha = hvc_snapshot.crop_wcs(corners, H_alpha, index=hvc_index, plot=plot)
+            Ha, Ha_corners = hvc_snapshot.crop_wcs(corners, H_alpha, index=hvc_index, plot=plot)
             print("Cropping HI")
-            H1 = hvc_snapshot.crop_wcs(corners, HIem, index=hvc_index, plot=plot)
+            H1, H1_corners = hvc_snapshot.crop_wcs(corners, HIem, index=hvc_index, plot=plot)
             print("Cropping interpolation")
-            intp_map = hvc_snapshot.crop_wcs(corners, interp["interpolation"], index=hvc_index, plot=plot)
+            intp_pre = hvc_snapshot.crop_wcs(corners, interp["interpolation"], index=hvc_index, plot=plot)
+            intp_err = hvc_snapshot.crop_wcs(corners, interp["error"], index=hvc_index, plot=False)
+            if bool(interp["corrected"]): intp_pst = hvc_snapshot.crop_wcs(corners, interp["corrected"], index=hvc_index, plot=plot)
             print("Filtering RMs")
-            RMs_filtered = hvc_snapshot.rm_filter(corners, RMs)
-            print("Correcting foreground")
-            intp_cor, RMs_filtered = hvc_snapshot.foreground_correction(corners, interp["interpolation"], interp["k-space"], interp["error"], RMs_filtered, hvc_area_range, plot=plot, index=hvc_index)
+            RMs_filtered = hvc_snapshot.rm_filter(corners, RMs, HIem)
+
+            if plot:
+                rm_overlay = np.array([
+                    RMs_filtered["pixel location x"],
+                    RMs_filtered["pixel location y"],
+                    RMs_filtered["RM"]
+                    ])
+                hplt.plot_fits_RM_overlay(rm_overlay, H1, show=True, index=hvc_index, pixel_corners=H1_corners)
+
             print("Snipping complete")
-            return {"corners":corners, "H-alpha":Ha, "HI":H1, "interpolation_raw":intp_map, "interpolation_corrected":intp_cor, "RMs":RMs_filtered}
+            return {"index":hvc_index, "corners":corners, "HI_pixel_corners":H1_corners, "H-alpha":Ha, "HI":H1, "interpolation":{"raw":intp_pre, "corrected":intp_pst, "error":intp_err}, "RMs":RMs_filtered}
     
-    # FIXME: Test if correct
     def get_corners(selected_HVC):
         dx = selected_HVC['dx']
         dy = selected_HVC['dy']
@@ -216,10 +224,9 @@ class hvc_snapshot:
             print(pix_down)
             hplt.plot_image_crop(image, crop_img(image.data, pix_up, pix_down), pix_up, pix_down, pix_c, index)
         
-        return crop_img(image.data, pix_up, pix_down)
+        return crop_img(image.data, pix_up, pix_down), [pix_down, pix_up, pix_c]
 
-    # FIXME: Test for validity
-    def rm_filter(corners, RMs):
+    def rm_filter(corners, RMs, HIem):
 
         # Create mask
         gal_RM_locations = RMs["ra_dec_obj"].galactic
@@ -228,17 +235,31 @@ class hvc_snapshot:
         print(str(sum(mask))+" RM grid points found")
 
         # Filter the RMs
-        filtered_RMs = copy.deepcopy(RMs[mask])
+        filtered_RMs = copy.deepcopy(RMs)[mask]
+
+        # Get corners in terms of the HI image
+        wcs = it.wcs(HIem.header)
+        pix = list(np.array(list(map(int, it.get_pixel(wcs, SkyCoord(l=corners[1].l, b=corners[0].b, frame='galactic')))))+0)
+
+        # Subtract get RM subpixel
+        subpixelsx = []
+        subpixelsy = []
+        for rm in filtered_RMs:
+            subpixel = it.get_pixel(wcs, rm['ra_dec_obj'])-pix
+            subpixelsy.append(subpixel[0])
+            subpixelsx.append(subpixel[1])
+        filtered_RMs.add_column(subpixelsx, name="pixel location x")
+        filtered_RMs.add_column(subpixelsy, name="pixel location y")
 
         return filtered_RMs
     
     # Assumes RMs are already corrected
     def foreground_correction(corners, interpolation, k_space, interpolation_std, RMs, hvc_area_range=(1, np.pi), index=-1, plot=False):
-
+    
         # Filter the k-space and get corrected foreground
         new_k_space = fgrm.filter_k_space(k_space, hvc_area_range)
         cor_fg = fgrm.restore_foreground(new_k_space, interpolation)
-
+    
         # Correct RMs
         cor_RMs = fgrm.get_corrected_RMs(interpolation, cor_fg, interpolation_std, RMs)
 
@@ -246,11 +267,13 @@ class hvc_snapshot:
         snap_cor = hvc_snapshot.crop_wcs(corners, cor_fg, index=index, plot=plot)
 
         return snap_cor, cor_RMs
+        
 
 class collation_tools:
 
     # WARNING: This function takes a long time to execute, make sure to specify a file to save the list in, so that it only needs to run once.
     def calculate_HVC_seperation(collated_data, save_file = "../output.txt"):
+        print("=== SEPERATION CALCULATION ===")
         l = len(collated_data['HVCs']) - 1
         lr = len(collated_data['RMs']) - 1
         row = 0
@@ -281,10 +304,11 @@ class collation_tools:
             for line in sep_arr:
                 txt_file.write(str(line)+"\n")
         
-    def add_HVC_seperation(hvcs, max_sep=2*np.pi, load_file="../output.txt"):
+    def add_HVC_seperation(hvcs, max_sep=2*np.pi, load_file="../output.txt", save_file=""):
+        print("=== COLLATING SEPERATIONS ===")
         sep_arr = []
 
-        with open("output.txt", "r") as txt_file:
+        with open(load_file, "r") as txt_file:
             sep_arr = txt_file.read().split("\n")[:-1]
 
         sep_arr = list(map(Angle, sep_arr))
@@ -292,7 +316,63 @@ class collation_tools:
         hvcs = copy.deepcopy(hvcs)
 
         hvcs.add_column(sep_arr, name="Nearest RM")
+        hvcs["Nearest RM"].unit = u.deg
 
         hvcs = hvcs[hvcs["Nearest RM"].value < max_sep]
 
+        if save_file:
+            collation_tools.write_processed(hvcs, save_file)
+
         return hvcs
+    
+    # WARNING: This function takes a long time to execute, make sure to specify a file to save the updated RMs, so that it only needs to run once.
+    def add_interpolations(RMs, interpolation_pre, interpolation_post=[], interpolation_std=[], save_file=""):
+        with warnings.catch_warnings(action="ignore", category=fitswarn):
+            print("=== COLLATING INTERPOLATION ===")
+            new_RMs = copy.deepcopy(RMs)
+
+            collect_post = bool(interpolation_post)
+            collect_err = bool(interpolation_std)
+
+            pre_fg_list = []
+            pst_fg_list = []
+            std_fg_list = []
+
+            l = len(RMs)
+
+            print("Calculating interpolations")
+    
+            for rm_index in range(len(RMs)):
+                entry = RMs[rm_index]
+                coords = entry["ra_dec_obj"].galactic
+                strength = it.get_flux_at_point(interpolation_pre, coords)
+                pre_fg_list.append(strength)
+                if collect_post:
+                    strength = it.get_flux_at_point(interpolation_post, coords)
+                    pst_fg_list.append(strength)
+                if collect_err:
+                    strength = it.get_flux_at_point(interpolation_std, coords)
+                    std_fg_list.append(strength)
+                print(str(int(rm_index/l*100))+"% \r", sep="", end="", flush=True)
+
+            print("Adding interpolations")
+    
+            new_RMs.add_column(pre_fg_list, name="interpolation_raw")
+            new_RMs["interpolation_raw"].unit = u.rad / (u.m ** 2)
+            if collect_post:
+                new_RMs.add_column(pst_fg_list, name="interpolation_cor")
+                new_RMs["interpolation_cor"].unit = u.rad / (u.m ** 2)
+            if collect_err:
+                new_RMs.add_column(std_fg_list, name="interpolation_unc")
+                new_RMs["interpolation_unc"].unit = u.rad / (u.m ** 2)
+
+            if save_file:
+                print("Saving RMs to "+save_file)
+                collation_tools.write_processed(new_RMs, save_file)
+
+            print("Process complete")
+
+            return new_RMs
+    
+    def write_processed(table, file):
+        table.write(file+".ecsv", format='ascii.ecsv', overwrite=True)  
