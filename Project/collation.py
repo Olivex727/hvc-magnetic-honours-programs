@@ -272,7 +272,7 @@ class hvc_snapshot:
 class collation_tools:
 
     # WARNING: This function takes a long time to execute, make sure to specify a file to save the list in, so that it only needs to run once.
-    def calculate_HVC_seperation(collated_data, save_file = "../output.txt"):
+    def calculate_HVC_seperation(collated_data, save_file = "../data_processed/output.txt"):
         print("=== SEPERATION CALCULATION ===")
         l = len(collated_data['HVCs']) - 1
         lr = len(collated_data['RMs']) - 1
@@ -300,7 +300,7 @@ class collation_tools:
             print("RM loop: 100%; HVC loop: "+str(val)+"% \r", sep="", end="", flush=True)
             row = row + 1
 
-        with open("output.txt", "w") as txt_file:
+        with open(save_file, "w") as txt_file:
             for line in sep_arr:
                 txt_file.write(str(line)+"\n")
         
