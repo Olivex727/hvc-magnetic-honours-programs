@@ -17,6 +17,14 @@ class honours_plot:
 
         if show:
             plt.show()
+    
+    def plot_RMs_overlay(x_pixels, y_pixels, rms, h1, corners=[], index=-1):
+        rm_overlay = np.array([
+            x_pixels,
+            y_pixels,
+            rms
+        ])
+        honours_plot.plot_fits_RM_overlay(rm_overlay, h1, show=True, index=index, pixel_corners=corners)
 
     def plot_image_crop(image, image_cropped, pix_up, pix_down, pix_c=[0, 0], index=-1, show=True):
         if index >= 0: plt.title("Location of HVC index "+str(index))
@@ -95,8 +103,8 @@ class honours_plot:
             plt.show()
 
     def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]"):
-        plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4])
-        plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4])
+        if set_1_name: plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4])
+        if set_2_name: plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4])
         plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4])
         plt.legend()
         if ylabel: plt.ylabel(ylabel)
