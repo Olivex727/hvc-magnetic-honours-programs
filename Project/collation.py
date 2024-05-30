@@ -52,7 +52,7 @@ class file_find:
     
     def get_HVC_locations(load_file='../data_catalog/vizier_Moss2013_HVCs.vot', hvc_area_range=(1, np.pi), full_hvc_range=False, override=False):
         if override:
-            return ascii.read(load_file)
+            return ascii.read(load_file+'.ecsv')
 
         def format_sexagesimal(coord):
             ra, dec = coord.split()[:3], coord.split()[3:]
@@ -304,7 +304,7 @@ class collation_tools:
             for line in sep_arr:
                 txt_file.write(str(line)+"\n")
         
-    def add_HVC_seperation(hvcs, max_sep=2*np.pi, load_file="../output.txt", save_file=""):
+    def add_HVC_seperation(hvcs, max_sep=np.pi, load_file="../data_processed/output.txt", save_file="../data_processed/proc_hvcs"):
         print("=== COLLATING SEPERATIONS ===")
         sep_arr = []
 

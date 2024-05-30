@@ -1,0 +1,215 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - name: Name
+#   datatype: string
+#   description: HVC/AVC name GLLL.l+BB.b+VVV (1)
+#   meta: !!omap
+#   - {ucd: meta.id}
+#   - links:
+#     - {href: 'http://vizier.cds.unistra.fr/viz-bin/VizieR-5?-info=XML&-out.add=.&-source=J/ApJS/209/12/table1&recno=${recno}'}
+#   - {_votable_string_dtype: char}
+# - {name: SkyCoord.ra, unit: deg, datatype: float64}
+# - {name: SkyCoord.dec, unit: deg, datatype: float64}
+# - name: RAJ2000
+#   unit: ''
+#   datatype: string
+#   description: Peak Hour of Right Ascension (J2000)
+#   meta: !!omap
+#   - {ucd: pos.eq.ra;meta.main}
+#   - {_votable_string_dtype: char}
+# - name: DEJ2000
+#   unit: ''
+#   datatype: string
+#   description: Peak Degree of Declination (J2000)
+#   meta: !!omap
+#   - {ucd: pos.eq.dec;meta.main}
+#   - {_votable_string_dtype: char}
+# - name: VLSR
+#   unit: km / s
+#   datatype: float32
+#   format: '{:6.1f}'
+#   description: '[-483/481] Local Standard of Rest velocity'
+#   meta: !!omap
+#   - {ucd: phys.veloc;pos.lsr}
+#   - {width: 6}
+#   - {precision: '1'}
+# - name: e_VLSR
+#   unit: km / s
+#   datatype: float32
+#   format: '{:4.1f}'
+#   description: '[1/14] Uncertainty in VLSR (2)'
+#   meta: !!omap
+#   - {ucd: stat.error;phys.veloc;pos.lsr}
+#   - {width: 4}
+#   - {precision: '1'}
+# - name: VGSR
+#   unit: km / s
+#   datatype: float32
+#   format: '{:6.1f}'
+#   description: '[-686/467] Galactic Standard of Rest velocity (3)'
+#   meta: !!omap
+#   - {ucd: phys.veloc;pos.galactocentric}
+#   - {width: 6}
+#   - {precision: '1'}
+# - name: Vdev
+#   unit: km / s
+#   datatype: float32
+#   format: '{:6.1f}'
+#   description: '[-445/443] Deviation velocity (4)'
+#   meta: !!omap
+#   - {ucd: phys.veloc}
+#   - {width: 6}
+#   - {precision: '1'}
+# - name: FWHM
+#   unit: km / s
+#   datatype: float32
+#   format: '{:4.1f}'
+#   description: '[2.8/58.3] Fitted Full-Width at Half-Maximum (5)'
+#   meta: !!omap
+#   - {ucd: spect.line.width}
+#   - {width: 4}
+#   - {precision: '1'}
+# - name: TbFit
+#   unit: K
+#   datatype: float32
+#   format: '{:6.2f}'
+#   description: '[0.06/120] Fitted peak brightness temperature (6)'
+#   meta: !!omap
+#   - {ucd: phys.temperature;stat.max}
+#   - {width: 6}
+#   - {precision: '2'}
+# - name: NH
+#   unit: 1 / cm2
+#   datatype: float32
+#   format: '{:8.1g}'
+#   description: '[1.3e+18/1.1e+22] Peak H I column density (7)'
+#   meta: !!omap
+#   - {ucd: phys.columnDensity;stat.max}
+#   - {width: 8}
+#   - {precision: E1}
+# - name: e_NH
+#   unit: 1 / cm2
+#   datatype: float32
+#   format: '{:8.1g}'
+#   description: Uncertainty in NH
+#   meta: !!omap
+#   - {ucd: stat.error}
+#   - {width: 8}
+#   - {precision: E1}
+# - name: Area
+#   unit: deg2
+#   datatype: float32
+#   format: '{:6.1f}'
+#   description: '[0.1/2253] Source area (8)'
+#   meta: !!omap
+#   - {ucd: phys.angSize}
+#   - {width: 6}
+#   - {precision: '1'}
+# - name: dx
+#   unit: deg
+#   datatype: float32
+#   format: '{:5.1f}'
+#   description: '[0.1/140] Maximum source x-extent above 2{sigma}_0_ (9)'
+#   meta: !!omap
+#   - {ucd: phys.angSize;src}
+#   - {width: 5}
+#   - {precision: '1'}
+# - name: dy
+#   unit: deg
+#   datatype: float32
+#   format: '{:4.1f}'
+#   description: '[0.1/73.1] Maximum source y-extent above 2{sigma}_0_ (9)'
+#   meta: !!omap
+#   - {ucd: phys.angSize;src}
+#   - {width: 4}
+#   - {precision: '1'}
+# - name: Flag
+#   datatype: string
+#   description: '[T,H0-9,CA,N -] Source flag(s) (10)'
+#   meta: !!omap
+#   - {ucd: meta.code.error}
+#   - {_votable_string_dtype: char}
+# - name: HI
+#   datatype: string
+#   description: HIPASS catalog identifier (11)
+#   meta: !!omap
+#   - {ucd: meta.id.cross}
+#   - links:
+#     - {href: 'http://vizier.cds.unistra.fr/viz-bin/VizieR-4?-info=XML&-out.add=.&-source=J/AJ/123/873/table1&Name=${HI}'}
+#   - {_votable_string_dtype: char}
+# - name: WW91
+#   datatype: string
+#   description: Wakker & van Woerden 1991A&A...250..509W identifier (12)
+#   meta: !!omap
+#   - {ucd: meta.id.assoc}
+#   - {_votable_string_dtype: char}
+# - name: Simbad
+#   datatype: string
+#   description: Simbad column added by the CDS
+#   meta: !!omap
+#   - {ucd: meta.ref.url}
+#   - {_votable_string_dtype: char}
+# - name: recno
+#   datatype: int32
+#   description: Record number assigned by the VizieR team. Should Not be used for identification.
+#   meta: !!omap
+#   - {ucd: meta.record}
+#   - {width: 8}
+#   - links:
+#     - {href: 'http://vizier.cds.unistra.fr/viz-bin/VizieR-5?-info=XML&-out.add=.&-source=J/ApJS/209/12/table1&recno=${recno}'}
+# - name: Cat
+#   datatype: string
+#   description: '[GHAVC] Catalog name, "GHVC" or "GAVC" (1)'
+#   meta: !!omap
+#   - {ucd: meta.id;meta.table}
+#   - {_votable_string_dtype: char}
+# - {name: Nearest RM, unit: deg, datatype: float64}
+# meta:
+#   ID: J_ApJS_209_12_table1
+#   __serialized_columns__:
+#     SkyCoord:
+#       __class__: astropy.coordinates.sky_coordinate.SkyCoord
+#       dec: !astropy.table.SerializedColumn
+#         __class__: astropy.coordinates.angles.Latitude
+#         unit: &id001 !astropy.units.Unit {unit: deg}
+#         value: !astropy.table.SerializedColumn {name: SkyCoord.dec}
+#       frame: icrs
+#       ra: !astropy.table.SerializedColumn
+#         __class__: astropy.coordinates.angles.Longitude
+#         unit: *id001
+#         value: !astropy.table.SerializedColumn {name: SkyCoord.ra}
+#         wrap_angle: !astropy.coordinates.Angle
+#           unit: *id001
+#           value: 360.0
+#       representation_type: spherical
+#   description: The GASS high-velocity clouds (HVCs) catalog
+#   name: J/ApJS/209/12/table1
+# schema: astropy-2.0
+Name SkyCoord.ra SkyCoord.dec RAJ2000 DEJ2000 VLSR e_VLSR VGSR Vdev FWHM TbFit NH e_NH Area dx dy Flag HI WW91 Simbad recno Cat "Nearest RM"
+G038.7-37.3-241 318.95132749810114 -11.83861664753068 "21 15 48.32" "-11 50 19" -241.4 1.0 -131.9 -203.9 12.2 0.87 2.5e+19 1.2e+18 1.5 4.2 3.0 T,H6 "HVC 038.9-37.1-230" GCN_GCN,EN,MS_MS Simbad 329 GHVC 0.18999947004444442
+G038.8-33.2-261 315.26399401780566 -10.006394575192065 "21 01 03.36" "-10 00 23" -261.0 1.0 -145.6 -223.5 20.7 0.94 3.8e+19 2e+18 2.2 4.9 3.9 T,H8 "HVC 039.0-33.4-256" GCN_GCN,EN,MS_MS Simbad 330 GHVC 0.11689431635833333
+G043.4-30.4-230 314.53824383026614 -5.268616824159749 "20 58 09.18" "-05 16 07" -230.7 1.0 -100.4 -193.2 22.9 0.64 2.9e+19 2.3e+18 1.6 3.4 3.0 H1 "HVC 043.1-30.0-218" GCN_GCN,EN,N,MS_MS Simbad 354 GHVC 0.1480177971361111
+G089.0-64.7-311 359.0471191770445 -5.603613730466462 "23 56 11.31" "-05 36 13" -311.7 1.0 -217.9 -274.2 18.9 0.5 1.9e+19 1.9e+18 1.4 3.4 3.1 H3 "HVC 089.4-64.7-314" EN,MS_MS Simbad 408 GHVC 0.10718682865555557
+G133.5-75.6-294 15.548161692114391 -13.005834286896315 "01 02 11.56" "-13 00 21" -294.1 1.8 -254.6 -261.6 26.8 0.42 2.1e+19 2.7e+18 1.3 4.2 1.4 H2 "HVC 131.9-75.8-302" EN,MS_MS Simbad 427 GHVC 0.048293947366666666
+G248.9+36.8+181 152.03907642863186 -8.363884064380029 "10 08 09.38" "-08 21 50" 181.6 4.6 17.3 139.1 22.4 0.13 1.4e+19 2.2e+18 1.1 2.1 1.6 "" "" WA,P,EP Simbad 588 GHVC 0.17119747194444443
+G261.5-34.5+237 80.51641498466985 -53.96443940870481 "05 22 03.94" "-53 57 52" 237.0 2.7 57.8 194.5 26.6 0.28 6.4e+18 2.6e+18 1.5 2.6 2.0 H1 "HVC 261.5-34.6+237" P,MS_MS,EP Simbad 722 GHVC 0.11800674041944445
+G262.4-26.2+143 94.79587147051343 -54.00693872468238 "06 19 11.01" "-54 00 25" 143.6 1.9 -52.0 101.1 19.5 0.28 1e+19 1.9e+18 1.6 3.1 2.6 H1 "HVC 261.8-26.0+148" P,MS_MS Simbad 729 GHVC 0.06030011547777778
+G263.7-18.6+273 107.59532795617528 -53.10971618893227 "07 10 22.88" "-53 06 35" 273.4 1.0 66.3 225.9 19.5 0.58 2.4e+19 1.9e+18 1.6 2.4 3.0 H1 "HVC 263.2-19.4+273" EP Simbad 740 GHVC 0.23542601523333334
+G264.6-53.3+224 49.38550058849787 -51.554164115992066 "03 17 32.52" "-51 33 15" 224.2 2.2 93.3 186.7 22.6 0.28 1.2e+19 2.2e+18 1.7 2.6 2.7 H4 "CHVC 264.8-53.3+222" P,MS_MS Simbad 749 GHVC 0.08026122106666667
+G267.1-38.4+263 72.85441680691092 -58.11082879640701 "04 51 25.06" "-58 06 39" 263.9 11.5 91.9 226.4 30.0 0.07 8.7e+18 3e+18 1.9 3.0 3.0 H1 "" MS_MS,EP Simbad 780 GHVC 0.06715514293333333
+G270.9-14.9+231 118.5064929743338 -57.90082726932357 "07 54 01.56" "-57 54 03" 231.6 1.3 19.1 184.1 24.3 0.52 2.3e+19 2.4e+18 1.1 2.1 2.1 H3 "HVC 271.6-14.6+233" P,EP Simbad 815 GHVC 0.022829184602777778
+G271.6-48.4+297 53.07246043911347 -57.751941544261314 "03 32 17.39" "-57 45 07" 297.0 1.1 151.1 259.5 21.5 0.53 2.2e+19 2.1e+18 1.8 2.1 4.6 H4 "HVC 271.2-48.6+299" MS_MS Simbad 827 GHVC 0.16698691374722222
+G271.7-53.1+254 45.85225180091096 -55.24166446085612 "03 03 24.54" "-55 14 30" 254.3 2.6 122.4 216.8 26.4 0.28 1.2e+19 2.6e+18 1.2 2.2 1.8 "" "" MS_MS Simbad 831 GHVC 0.14400955756666667
+G275.0-10.0+226 130.60128255277652 -58.63193860238657 "08 42 24.31" "-58 37 55" 226.3 1.6 10.5 178.8 19.5 0.34 1.1e+19 1.9e+18 1.3 2.1 2.5 H3 "HVC 274.2-10.4+219" P,EP Simbad 864 GHVC 0.1116467000638889
+G275.3+04.3+256 148.45198977555532 -48.74860606472991 "09 53 48.48" "-48 44 55" 256.5 1.6 38.1 194.0 17.2 0.3 1.2e+19 1.7e+18 1.1 1.6 1.8 "" "" EP Simbad 871 GHVC 0.056088848633333334
+G282.3-38.3+117 64.5366310473299 -69.42110720707727 "04 18 08.79" "-69 25 16" 117.3 2.6 -51.1 79.8 22.5 0.24 9.8e+18 2.2e+18 1.5 3.8 4.6 "" "" P,MS_MS Simbad 944 GHVC 0.1643797649638889
+G285.9-11.2+262 144.6051529688026 -67.4797169598968 "09 38 25.24" "-67 28 47" 262.8 1.0 55.3 215.3 23.3 0.74 3.3e+19 2.3e+18 1.2 2.6 2.2 H1 "CHVC 286.0-11.2+266" EP Simbad 987 GHVC 0.22235730239166668
+G294.7+03.7+246 177.2321099601094 -58.11333054156915 "11 48 55.71" "-58 06 48" 246.7 1.0 47.3 199.2 10.9 0.93 2.3e+19 1.1e+18 2.6 4.3 5.4 T,H2 "HVC 294.5+03.4+241" EP Simbad 1073 GHVC 0.2314715773
+G295.1-03.0+309 174.30760748559467 -64.79388582529013 "11 37 13.83" "-64 47 38" 309.2 1.0 110.3 256.7 20.7 0.66 2.5e+19 2e+18 1.7 3.1 5.0 H2 "HVC 295.3-03.3+311" EP Simbad 1079 GHVC 0.026716106097222223
+G296.9-01.5+198 179.1185658341928 -63.76833072082023 "11 56 28.46" "-63 46 06" 198.7 1.8 2.6 91.2 20.8 0.32 1.3e+19 2.1e+18 1.2 2.2 1.9 H1 "HVC 297.0-01.6+205" P,EP Simbad 1099 GHVC 0.2022272701888889
+G297.4-04.0+316 179.2178144051163 -66.39110850810881 "11 56 52.28" "-66 23 28" 316.0 1.0 121.3 268.5 15.9 1.38 4.5e+19 1.6e+18 1.3 3.0 4.0 H5 "CHVC 297.4-04.3+312" "" Simbad 1107 GHVC 0.14704937632222223
+G298.0-81.7+127 13.71933120325877 -35.32777892243496 "00 54 52.64" "-35 19 40" 127.5 2.2 99.7 95.0 19.2 0.24 4.6e+19 1.9e+18 1.5 2.2 2.6 H1 "HVC 296.7-81.2+126" MS_MS Simbad 1114 GHVC 0.07007004808055556
+G308.0+15.2+131 200.20852872966037 -47.33472175955531 "13 20 50.05" "-47 20 05" 131.3 1.0 -35.8 88.8 25.7 0.81 3.9e+19 2.5e+18 2.4 2.2 3.0 H2 "HVC 307.8+15.1+135" P Simbad 1238 GHVC 0.15378087097499998
+G323.0+25.6+122 214.74878131129492 -33.72833440708152 "14 18 59.71" "-33 43 42" 122.2 1.3 3.1 84.7 20.8 0.43 1.6e+19 2.1e+18 1.4 2.1 2.4 H1 "HVC 323.1+25.6+121" P Simbad 1402 GHVC 0.1485762072
+G328.2-16.4+101 263.6994454997835 -64.27000521698167 "17 34 47.87" "-64 16 12" 101.4 2.2 -9.6 58.9 20.0 0.25 1.9e+19 2e+18 1.3 4.0 1.8 "" "" P Simbad 1447 GHVC 0.10111753606944444
