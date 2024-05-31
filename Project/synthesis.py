@@ -14,6 +14,8 @@ from uncertainties import umath
 from astropy import units as u
 from astropy.units import astrophys as astru
 
+import copy
+
 import contextlib
 
 def hvc_rms(i): return "../data_processed/hvc_rms/hvc_rms_index_"+str(i)
@@ -54,37 +56,71 @@ class hvc_looper:
                 if override:
                     snapshots.append(snap.take_snapshot(index, collated_data["RMs"], hvc_override, collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], plot=False, rm_load_file=rm_load_file))
                 else:
-                    snapshots.append(snapshot = snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], plot=False, rm_load_file=rm_load_file))
+                    snapshots.append(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], plot=False, rm_load_file=rm_load_file))
             
             print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
         
         print("Plotting HVC data")
         hplt.plot_multiple_HVCs(snapshots)
 
-        return snapshots
+        #return snapshots
     
 class magnetic_field_derivation:
 
     def get_magnetic_field_HVC(cropped_data):
-        return 0
+        return magnetic_field_derivation.get_magnetic_field_points(cropped_data["RMs"])
 
-    def get_magnetic_field_points(RM_table, path_length):
-        return 0
+    def get_magnetic_field_points(rm_table, path_length=1):
+        print("=== CONVERTING RM TABLE ===")
+        B_name = ["raw", "int", "cor"]
+        B_list = [[], [], []]
+        B_unc_list = [[], [], []]
+        l = len(rm_table)
+        for index in range(len(rm_table)):
+            B = magnetic_field_derivation.get_magnetic_field_point(rm_table[index], path_length)
+            for i in range(len(B_name)):
+                B_list[i].append(B[i].n)
+                B_unc_list[i].append(B[i].s)
+            print(str(int((index+1)/l*100))+"% \r", sep="", end="", flush=True)
+            
+        print("Process Complete")
+        rm_table_new = copy.deepcopy(rm_table)
 
-    def get_magnetic_field_point(RM_point, path_length):
-        return 0
+        for i in range(len(B_name)):
+            rm_table_new.add_column(B_list[i], name="B_virtual ["+B_name[i]+"]")
+            rm_table_new["B_virtual ["+B_name[i]+"]"].unit = u.G
+
+            rm_table_new.add_column(B_unc_list[i], name="B_virtual_unc ["+B_name[i]+"]")
+            rm_table_new["B_virtual_unc ["+B_name[i]+"]"].unit = u.G
+
+        return rm_table_new
+
+    # Returns magnetic field in gauss
+    def get_magnetic_field_point(rm_point, path_length=1):
+        return calculate.B_virt(
+            rm_point["H-alpha flux"],
+            rm_point["H-alpha flux [Error]"],
+            rm_point["RM"],
+            rm_point["RM_uncert"],
+            rm_point["interpolation_raw"],
+            rm_point["interpolation_unc"],
+            rm_point["interpolation_cor"]
+            )
 
 class calculate:
 
+    # Returns in gauss
     def B_virt(H_alpha, H_alpha_err, rm, rm_unc, interp, interp_unc, interp_cor, intrinsic_unc=7):
-        RMs = np.array([
-            calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc),
-            calculate.RM(rm, rm_unc, interp, interp_unc, intrinsic_unc=intrinsic_unc),
-            calculate.RM(rm, rm_unc, interp_cor, interp_unc, intrinsic_unc=intrinsic_unc)
-            ])
+        div = 0.81 * (calculate.path_length() * calculate.EM(H_alpha, H_alpha_err)) ** 0.5
+        RMs = [
+            1e-6 * calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc)/div,
+            1e-6 * calculate.RM(rm, rm_unc, interp, interp_unc, intrinsic_unc=intrinsic_unc)/div,
+            1e-6 * calculate.RM(rm, rm_unc, interp_cor, interp_unc, intrinsic_unc=intrinsic_unc)/div
+            ]
 
-        return RMs / (0.81 * np.sqrt(calculate.path_length() * calculate.EM(H_alpha, H_alpha_err)))
+        return RMs
     
+    # Returns in rad m-2
     def RM(rm, rm_unc, cor=0, cor_unc=0, intrinsic_unc=7):
         return ufloat(rm, rm_unc) - ufloat(cor, cor_unc) + calculate.intrinsic_RM_err(intrinsic_unc)
     

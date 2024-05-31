@@ -93,7 +93,7 @@ class file_find:
 class collator:
 
     # WARNING: Collating the RMs from scratch may take some time, make sure to specify a file to save the list in, and load on all future usages of this function, so that it only needs to run once.
-    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data=["", ""], h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits"):
+    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data=["", ""], h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits", override_RMs=False):
         with warnings.catch_warnings(): #warnings.catch_warnings(action="ignore", category=verwarn)warnings.catch_warnings(action="ignore", category=fitswarn):
             warnings.simplefilter("ignore")
             print("=== WHOLE-SKY DATA COLLATION ===")
@@ -102,14 +102,15 @@ class collator:
             H_alpha = file_find.get_H_alpha()
             print("Extracting RMs")
             RMs = 0
-            if load_data[0]:
-                #"../data_processed/proc_rms.ecsv"
-                print("Collating RMs")
-                RMs = file_find.get_RMs(load_data[0], ".ecsv")
-            else:
-                RMs_raw = file_find.get_RMs()
-                print("Collating RMs")
-                RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
+            if not override_RMs:
+                if load_data[0]:
+                    #"../data_processed/proc_rms.ecsv"
+                    print("Collating RMs")
+                    RMs = file_find.get_RMs(load_data[0], ".ecsv")
+                else:
+                    RMs_raw = file_find.get_RMs()
+                    print("Collating RMs")
+                    RMs = collator.collate(RMs_raw, H_alpha[0], H_alpha[1])
             print("Getting HVC location data")
             if load_data[1]:
                 HVCs = file_find.get_HVC_locations(load_file=load_data[1],override=True)
@@ -168,7 +169,7 @@ class hvc_snapshot:
             intp_err = hvc_snapshot.crop_wcs(corners, interp["error"], index=hvc_index, plot=False)
             if bool(interp["corrected"]): intp_pst = hvc_snapshot.crop_wcs(corners, interp["corrected"], index=hvc_index, plot=plot)
             print("Filtering RMs")
-            if rm_load_file: RMs_filtered = file_find.getRMs(file=rm_load_file, ext=".ecsv")
+            if rm_load_file: RMs_filtered = file_find.get_RMs(file=rm_load_file, ext=".ecsv")
             else: RMs_filtered = hvc_snapshot.rm_filter(corners, RMs, HIem)
 
             if plot:
