@@ -146,7 +146,7 @@ class collator:
 class hvc_snapshot:
 
     # IMPORTANT: fourier transforms are linear, thus the uncertainties in the interpolation remain unchanged after filtering
-    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, selection=None, plot=False):
+    def take_snapshot(hvc_index, RMs, HVCs, HIem, H_alpha, interp, custom_selection=False, selection=None, plot=False, rm_save_file="", rm_load_file=""):
         with warnings.catch_warnings(action="ignore", category=fitswarn):
             print("=== HVC SNAPSHOT ===")
             print("Gathering data ...")
@@ -168,15 +168,21 @@ class hvc_snapshot:
             intp_err = hvc_snapshot.crop_wcs(corners, interp["error"], index=hvc_index, plot=False)
             if bool(interp["corrected"]): intp_pst = hvc_snapshot.crop_wcs(corners, interp["corrected"], index=hvc_index, plot=plot)
             print("Filtering RMs")
-            RMs_filtered = hvc_snapshot.rm_filter(corners, RMs, HIem)
+            if rm_load_file: RMs_filtered = file_find.getRMs(file=rm_load_file, ext=".ecsv")
+            else: RMs_filtered = hvc_snapshot.rm_filter(corners, RMs, HIem)
 
             if plot:
+                print("Plotting")
                 rm_overlay = np.array([
                     RMs_filtered["pixel location x"],
                     RMs_filtered["pixel location y"],
                     RMs_filtered["RM"]
                     ])
                 hplt.plot_fits_RM_overlay(rm_overlay, H1, show=True, index=hvc_index, pixel_corners=H1_corners)
+
+            if rm_save_file:
+                print("Saving RMs")
+                collation_tools.write_processed(RMs_filtered, rm_save_file)
 
             print("Snipping complete")
             return {"index":hvc_index, "corners":corners, "HI_pixel_corners":H1_corners, "H-alpha":Ha, "HI":H1, "interpolation":{"raw":intp_pre, "corrected":intp_pst, "error":intp_err}, "RMs":RMs_filtered}
