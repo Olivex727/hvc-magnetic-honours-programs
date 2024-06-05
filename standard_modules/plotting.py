@@ -113,6 +113,18 @@ class honours_plot:
 
         if show:
             plt.show()
+    
+    def plot_3hist(set_1, set_2, set_3, set_1_name="", set_2_name="", set_3_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]"):
+        if set_1_name: plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4])
+        if set_2_name: plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4])
+        if set_3_name: plt.hist(set_3, bins, bounds, label=set_3_name, color=[0.1, 0.1, 0.8, 0.4])
+        plt.legend()
+        if ylabel: plt.ylabel(ylabel)
+        if xlabel: plt.xlabel(xlabel)
+        if title: plt.title(title)
+
+        if show:
+            plt.show()
 
     # NB: Plots must come in multiples of 3
     def plot_multiple_HVCs(snapshots, size=6, show=True):

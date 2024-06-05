@@ -6,7 +6,7 @@ sys.path.append('C://Users/olive/OneDrive - Australian National University/Honou
 import numpy as np
 
 from plotting import honours_plot as hplt
-from collation import hvc_snapshot as snap
+from collation import hvc_snapshot as snap, collation_tools as ct
 
 from uncertainties import ufloat
 from uncertainties import umath
@@ -22,11 +22,49 @@ def hvc_rms(i): return "../data_processed/hvc_rms/hvc_rms_index_"+str(i)
 
 class hvc_looper:
 
-    def add_magnetic_field_HVCs(collated_data, hvc_indicies=[]):
-        return 0
-    
     def add_survival_times_HVCs(collated_data, hvc_indicies=[]):
         return 0
+
+    def add_magnetic_field_HVCs(collated_data, hvc_indicies=[], save_directory="../data_processed/", rm_load=True):
+        return 0
+
+    def add_magnetic_field_RMs(collated_data, hvc_indicies=[], save_directory="../data_processed/hvc_rms/", rm_load=True):
+        rmbs = []
+        print("=== CALCULATING HVC MAGNETIC FIELDS ===")
+        print("Calculating HVC data")
+
+        if not bool(hvc_indicies): hvc_indicies = list(range(len(collated_data["HVCs"])))
+        l = len(hvc_indicies)
+
+        for i in range(l):
+            index = hvc_indicies[i]
+
+            if rm_load: rm_load_file = hvc_rms(index)
+            else: rm_load_file = ""
+
+            with contextlib.redirect_stdout(None):
+                rmb = magnetic_field_derivation.get_magnetic_field_points(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], plot=False, rm_load_file=rm_load_file)["RMs"])
+
+                if save_directory: ct.write_processed(rmb, save_directory+"hvc_rms_index_"+str(index)+"_with_B")
+
+                rmbs.append(rmb)
+            
+            print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
+        
+        print("Process complete")
+        return rmbs
+    
+    def load_HVC_RMs(collated_data, directory="../data_processed/hvc_rms/", has_B=True):
+        print("=== HVC RM LOADER ===")
+        print("Taking HVC snapshots")
+        rms = []
+        l = len(collated_data["HVCs"])
+        for index in range(l):
+            with contextlib.redirect_stdout(None):
+                rms.append(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], rm_load_file=directory+"hvc_rms_index_"+str(index)+("_with_B" if has_B else ""))["RMs"])
+            print(str(int((index+1)/l*100))+"% \r", sep="", end="", flush=True)
+        print("Process complete")
+        return rms
     
     def save_HVC_RMs(collated_data, directory="../data_processed/hvc_rms/"):
         print("=== HVC RM SAVER ===")
@@ -49,7 +87,7 @@ class hvc_looper:
         for i in range(len(hvc_indicies)):
             index = hvc_indicies[i]
 
-            if rm_load: rm_load_file = hvc_rms(i)
+            if rm_load: rm_load_file = hvc_rms(index)
             else: rm_load_file = ""
 
             with contextlib.redirect_stdout(None):
@@ -63,10 +101,12 @@ class hvc_looper:
         print("Plotting HVC data")
         hplt.plot_multiple_HVCs(snapshots)
 
+        print("Process complete")
         #return snapshots
     
 class magnetic_field_derivation:
 
+    # DO NOT USE (YET)
     def get_magnetic_field_HVC(cropped_data):
         return magnetic_field_derivation.get_magnetic_field_points(cropped_data["RMs"])
 
