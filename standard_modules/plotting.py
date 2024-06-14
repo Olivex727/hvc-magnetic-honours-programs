@@ -12,8 +12,8 @@ class honours_plot:
         rms_pos = np.array(list(filter(lambda val: val[2] > 0, rms.transpose()))).transpose()
         rms_neg = np.array(list(filter(lambda val: val[2] < 0, rms.transpose()))).transpose()
 
-        plt.scatter(rms_pos[0] * scale, rms_pos[1] * scale, s=rms_pos[2], color=(1, 1, 1, 0), edgecolors='red', linewidth=2)
-        plt.scatter(rms_neg[0] * scale, rms_neg[1] * scale, s=-1 * rms_neg[2], color=(1, 1, 1, 0), edgecolors='blue', linewidth=2)
+        if rms_pos.any(): plt.scatter(rms_pos[0], rms_pos[1], s=rms_pos[2] * scale, color=(1, 1, 1, 0), edgecolors='red', linewidth=2)
+        if rms_neg.any(): plt.scatter(rms_neg[0], rms_neg[1], s=-1 * rms_neg[2] * scale, color=(1, 1, 1, 0), edgecolors='blue', linewidth=2)
 
         if show:
             plt.show()
@@ -58,8 +58,8 @@ class honours_plot:
         if show:
             plt.show()
     
-    def plot_fits_RM_overlay(rms, image, scale=1, show=True, index=-1, pixel_corners=[]):
-        if index >= 0: plt.title("RM field for HVC "+str(index))
+    def plot_fits_RM_overlay(rms, image, scale=1, show=True, index=-1, pixel_corners=[], title_prefix=""):
+        if not index.isdigit() or index >= 0: plt.title(title_prefix+(" " if title_prefix else "")+"RM field for HVC "+str(index))
         
         honours_plot.plot_RMs(rms, scale=scale)
         honours_plot.plot_fits(image, False)
@@ -69,7 +69,7 @@ class honours_plot:
         if show:
             plt.show()
     
-    def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="gist_rainbow", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs"):
+    def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="gist_rainbow", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs", return_color=False):
         b_list = rms['ra_dec_obj'].galactic.b
 
         colormap = plt.colormaps[color_map]
@@ -82,6 +82,9 @@ class honours_plot:
 
         if show:
             plt.show()
+
+        if return_color:
+            return scatter
 
     def plot_heatmap_single(x_col, y_col, xlabel="", ylabel="", title="", bins=20, rng=[[-80, 80], [-180, 180]], show=True):
         plt.hist2d(x_col, y_col, bins=bins, range=rng)
@@ -127,12 +130,12 @@ class honours_plot:
             plt.show()
 
     # NB: Plots must come in multiples of 3
-    def plot_multiple_HVCs(snapshots, size=6, show=True):
+    def plot_multiple_HVCs(snapshots, scale=1, size=6, show=True):
         ny_plots = int(len(snapshots) / 3)
 
         plt.figure(figsize=(size*3, ny_plots*size))
 
-        plt.rcParams.update({'font.size': 14})
+        plt.rcParams.update({'font.size': size*2})
 
         plt.tight_layout(pad=0)
 
@@ -147,7 +150,35 @@ class honours_plot:
             plt.axis([0, snapshot['HI'].shape[0]-2, 0, snapshot['HI'].shape[1]-2])
             plt.tight_layout(w_pad=0, h_pad=1)
             plt.margins(tight=True)
-            honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["index"], pixel_corners=snapshot["HI_pixel_corners"])
+            honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale)
+        
+        if show:
+            plt.show()
+
+    def plot_multiple_HVCs_with_RM_sets(snapshots, scale=1, size=6, show=True):
+        ny_plots = len(snapshots)
+
+        plt.figure(figsize=(size*3, ny_plots*size))
+
+        plt.rcParams.update({'font.size': 1 + (size)*2})
+
+        plt.tight_layout(pad=0)
+
+        keywords = ["RM", "interpolation_raw", "interpolation_cor"]
+        titleword = ["Uncorrected", "Intp. corrected", "Fourier corrected"]
+
+        for s in range(len(snapshots) * 3):
+            snapshot = snapshots[int(s / 3)]
+            rm_overlay = np.array([
+                snapshot["RMs"]["pixel location x"],
+                snapshot["RMs"]["pixel location y"],
+                snapshot["RMs"]["RM"] - (snapshot["RMs"][keywords[s % 3]] if s % 3 != 0 else 0)
+                ])
+            plt.subplot(ny_plots, 3, s+1)
+            plt.axis([0, snapshot['HI'].shape[0]-2, 0, snapshot['HI'].shape[1]-2])
+            plt.tight_layout(w_pad=0, h_pad=1)
+            plt.margins(tight=True)
+            honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale, title_prefix=titleword[s % 3])
         
         if show:
             plt.show()

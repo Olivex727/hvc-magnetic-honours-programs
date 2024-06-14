@@ -186,7 +186,7 @@ class hvc_snapshot:
                 collation_tools.write_processed(RMs_filtered, rm_save_file)
 
             print("Snipping complete")
-            return {"index":hvc_index, "corners":corners, "HI_pixel_corners":H1_corners, "H-alpha":Ha, "HI":H1, "interpolation":{"raw":intp_pre, "corrected":intp_pst, "error":intp_err}, "RMs":RMs_filtered}
+            return {"index":hvc_index, "corners":corners, "HI_pixel_corners":H1_corners, "H-alpha":Ha, "HI":H1, "interpolation":{"raw":intp_pre, "corrected":intp_pst, "error":intp_err}, "RMs":RMs_filtered, "HVC":selected_HVC}
     
     def get_corners(selected_HVC):
         dx = selected_HVC['dx']
