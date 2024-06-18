@@ -86,8 +86,8 @@ class honours_plot:
         if return_color:
             return scatter
 
-    def plot_heatmap_single(x_col, y_col, xlabel="", ylabel="", title="", bins=20, rng=[[-80, 80], [-180, 180]], show=True):
-        plt.hist2d(x_col, y_col, bins=bins, range=rng)
+    def plot_heatmap_single(RMs, x_col='RM', y_col="interpolation_raw", xlabel="", ylabel="", title="", bins=20, rng=[[-80, 80], [-180, 180]], show=True):
+        plt.hist2d(RMs[x_col], RMs[y_col], bins=bins, range=rng)
 
         if xlabel: plt.xlabel(xlabel)
         if ylabel: plt.ylabel(ylabel)
