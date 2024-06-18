@@ -103,7 +103,7 @@ class hvc_looper:
         else: hplt.plot_multiple_HVCs_with_RM_sets(snapshots, scale=scale, size=size)
 
         print("Process complete")
-        #return snapshots
+        return snapshots
     
 class magnetic_field_derivation:
 
