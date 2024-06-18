@@ -85,10 +85,14 @@ class file_find:
         return img, err
     
     def get_interpolation(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True, fourier_correct=True, hvc_area_range=(1, np.pi)):
-        interpolation, error, k_space = intp.interpolate(RMs, use_H_alpha, H_alpha, calculate_interpolation)
-        if fourier_correct: corrected = intp.fourier_interpolate(interpolation, k_space, hvc_area_range)
-        else: corrected = []
-        return {"interpolation":interpolation, "error":error, "k-space":k_space, "corrected":corrected}
+        interpolation, error, k_space, k_err = intp.interpolate(RMs, use_H_alpha, H_alpha, calculate_interpolation)
+        if fourier_correct:
+            corrected = intp.fourier_interpolate(interpolation, k_space, hvc_area_range)
+            corrected_err = intp.fourier_interpolate(error, k_err, hvc_area_range) # Linear FT correction
+        else:
+            corrected = []
+            corrected_err = []
+        return {"interpolation":interpolation, "error":error, "k-space":k_space, "corrected":corrected, "corrected_err":corrected_err}
 
 class collator:
 
@@ -167,7 +171,12 @@ class hvc_snapshot:
             print("Cropping interpolation")
             intp_pre = hvc_snapshot.crop_wcs(corners, interp["interpolation"], index=hvc_index, plot=plot)
             intp_err = hvc_snapshot.crop_wcs(corners, interp["error"], index=hvc_index, plot=False)
-            if bool(interp["corrected"]): intp_pst = hvc_snapshot.crop_wcs(corners, interp["corrected"], index=hvc_index, plot=plot)
+            if bool(interp["corrected"]):
+                intp_pst = hvc_snapshot.crop_wcs(corners, interp["corrected"], index=hvc_index, plot=plot)
+                intp_per = hvc_snapshot.crop_wcs(corners, interp["corrected_err"], index=hvc_index, plot=plot)
+            else:
+                intp_pst = []
+                intp_per = []
             print("Filtering RMs")
             if rm_load_file: RMs_filtered = file_find.get_RMs(file=rm_load_file, ext=".ecsv")
             else: RMs_filtered = hvc_snapshot.rm_filter(corners, RMs, HIem)
@@ -186,7 +195,7 @@ class hvc_snapshot:
                 collation_tools.write_processed(RMs_filtered, rm_save_file)
 
             print("Snipping complete")
-            return {"index":hvc_index, "corners":corners, "HI_pixel_corners":H1_corners, "H-alpha":Ha, "HI":H1, "interpolation":{"raw":intp_pre, "corrected":intp_pst, "error":intp_err}, "RMs":RMs_filtered, "HVC":selected_HVC}
+            return {"index":hvc_index, "corners":corners, "HI_pixel_corners":H1_corners, "H-alpha":Ha, "HI":H1, "interpolation":{"raw":intp_pre, "corrected":intp_pst, "error":intp_err, "cor_err":intp_per}, "RMs":RMs_filtered, "HVC":selected_HVC}
     
     def get_corners(selected_HVC):
         dx = selected_HVC['dx']
@@ -261,6 +270,7 @@ class hvc_snapshot:
         return filtered_RMs
     
     # Assumes RMs are already corrected
+    # NB: Unused
     def foreground_correction(corners, interpolation, k_space, interpolation_std, RMs, hvc_area_range=(1, np.pi), index=-1, plot=False):
     
         # Filter the k-space and get corrected foreground
@@ -333,17 +343,20 @@ class collation_tools:
         return hvcs
     
     # WARNING: This function takes a long time to execute, make sure to specify a file to save the updated RMs, so that it only needs to run once.
-    def add_interpolations(RMs, interpolation_pre, interpolation_post=[], interpolation_std=[], save_file=""):
+    def add_interpolations(RMs, interpolation_pre=[], interpolation_post=[], interpolation_std=[], interpolation_post_err=[], save_file=""):
         with warnings.catch_warnings(action="ignore", category=fitswarn):
             print("=== COLLATING INTERPOLATION ===")
             new_RMs = copy.deepcopy(RMs)
 
+            collect_pre = bool(interpolation_pre)
             collect_post = bool(interpolation_post)
             collect_err = bool(interpolation_std)
+            collect_post_err = bool(interpolation_post_err)
 
             pre_fg_list = []
             pst_fg_list = []
             std_fg_list = []
+            per_fg_list = []
 
             l = len(RMs)
 
@@ -352,26 +365,34 @@ class collation_tools:
             for rm_index in range(len(RMs)):
                 entry = RMs[rm_index]
                 coords = entry["ra_dec_obj"].galactic
-                strength = it.get_flux_at_point(interpolation_pre, coords)
-                pre_fg_list.append(strength)
+                if collect_pre:
+                    strength = it.get_flux_at_point(interpolation_pre, coords)
+                    pre_fg_list.append(strength)
                 if collect_post:
                     strength = it.get_flux_at_point(interpolation_post, coords)
                     pst_fg_list.append(strength)
                 if collect_err:
                     strength = it.get_flux_at_point(interpolation_std, coords)
                     std_fg_list.append(strength)
+                if collect_post_err:
+                    strength = it.get_flux_at_point(interpolation_post_err, coords)
+                    per_fg_list.append(strength)
                 print(str(int(rm_index/l*100))+"% \r", sep="", end="", flush=True)
 
             print("Adding interpolations")
     
-            new_RMs.add_column(pre_fg_list, name="interpolation_raw")
-            new_RMs["interpolation_raw"].unit = u.rad / (u.m ** 2)
+            if collect_pre:
+                new_RMs.add_column(pre_fg_list, name="interpolation_raw")
+                new_RMs["interpolation_raw"].unit = u.rad / (u.m ** 2)
             if collect_post:
                 new_RMs.add_column(pst_fg_list, name="interpolation_cor")
                 new_RMs["interpolation_cor"].unit = u.rad / (u.m ** 2)
             if collect_err:
                 new_RMs.add_column(std_fg_list, name="interpolation_unc")
                 new_RMs["interpolation_unc"].unit = u.rad / (u.m ** 2)
+            if collect_post_err:
+                new_RMs.add_column(per_fg_list, name="interpolation_cor_unc")
+                new_RMs["interpolation_cor_unc"].unit = u.rad / (u.m ** 2)
 
             if save_file:
                 print("Saving RMs to "+save_file)

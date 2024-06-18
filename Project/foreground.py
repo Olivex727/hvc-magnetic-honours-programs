@@ -13,11 +13,11 @@ class interpolate:
             if use_H_alpha:
                 hdu_main = fits.open("../data_preprocessed/Hutschenreuter_2020_faraday_sky_wff_mean.fits")[0]
                 hdu_err = fits.open("../data_preprocessed/Hutschenreuter_2020_faraday_sky_wff_std.fits")[0]
-                return hdu_main, hdu_err, foreground_remover.get_k_space(hdu_main.data)
+                return hdu_main, hdu_err, foreground_remover.get_k_space(hdu_main.data), foreground_remover.get_k_space(hdu_err.data)
             else:
                 hdu_main = fits.open("../data_preprocessed/Hutschenreuter_2020_faraday_sky_woff_mean.fits")[0]
                 hdu_err = fits.open("../data_preprocessed/Hutschenreuter_2020_faraday_sky_woff_std.fits")[0]
-                return hdu_main, hdu_err, foreground_remover.get_k_space(hdu_main.data)
+                return hdu_main, hdu_err, foreground_remover.get_k_space(hdu_main.data), foreground_remover.get_k_space(hdu_err.data)
     
     def fourier_interpolate(interpolation, k_space, hvc_area_range):
         filtered_k_space = foreground_remover.filter_k_space(k_space, hvc_area_range)
