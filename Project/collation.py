@@ -401,6 +401,38 @@ class collation_tools:
             print("Process complete")
 
             return new_RMs
+        
+    # WARNING: This function takes a long time to execute, make sure to specify a file to save the updated RMs, so that it only needs to run once.
+    def add_HI_emission(RMs, H1, save_file=""):
+        with warnings.catch_warnings(action="ignore", category=fitswarn):
+            print("=== COLLATING HI EMISSION ===")
+            new_RMs = copy.deepcopy(RMs)
+            H1_list = []
+            l = len(RMs)
+
+            print("Calculating HI Emission")
+            for rm_index in range(len(RMs)):
+                entry = RMs[rm_index]
+                coords = entry["ra_dec_obj"].galactic
+                strength = it.get_flux_at_point(H1, coords)
+                if np.isnan(strength):
+                    H1_list.append(0)
+                else:
+                    H1_list.append(strength)
+                    print(str(int(rm_index/l*100))+"% \r", sep="", end="", flush=True)
+            
+            print("Adding interpolations")
+    
+            new_RMs.add_column(H1_list, name="HI")
+            new_RMs.add_column(list(0.5*np.array(H1_list)), name="HI [Error]")
+            new_RMs["HI"].unit = u.dex(u.cm ** -2)
+            new_RMs["HI [Error]"].unit = u.dex(u.cm ** -2)
+
+            if save_file:
+                print("Saving RMs to "+save_file)
+                collation_tools.write_processed(new_RMs, save_file)
+
+            print("Process complete")
     
     def write_processed(table, file):
         table.write(file+".ecsv", format='ascii.ecsv', overwrite=True)  

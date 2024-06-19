@@ -108,7 +108,7 @@ class honours_plot:
     
     def plot_H_alpha(Ha, bins=100, rng=(0,5), show=True):
         plt.hist(Ha, bins, rng, color=[0.8, 0.1, 0.8, 0.6])
-        plt.title("RM gird point H-alpha fluxes")
+        plt.title("RM sample associated H-alpha fluxes")
         plt.xlabel(r"Flux [$R$]")
         plt.ylabel("Counts")
 
@@ -116,9 +116,9 @@ class honours_plot:
             plt.show()
     
     def plot_HI(H1, bins=100, rng=(0,5), show=True):
-        plt.hist(H1, bins, rng, color=[0.8, 0.1, 0.8, 0.6])
-        plt.title("RM gird point H-alpha fluxes")
-        plt.xlabel(r"Flux [$R$]")
+        plt.hist(H1, bins, rng, color=[0.1, 0.8, 0.8, 0.6])
+        plt.title("RM sample associated HI fluxes")
+        plt.xlabel(r"Column Density [$dex(cm^{-2})$]")
         plt.ylabel("Counts")
 
         if show:
