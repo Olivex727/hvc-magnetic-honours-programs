@@ -50,24 +50,32 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_fits(image, show=True):
+    def plot_fits(image, show=True, color_map="Greys"):
+        if color_map: colormap = plt.colormaps[color_map]
+
         plt.xticks([])
         plt.yticks([])
-        plt.imshow(image.data)
+        image = plt.imshow(image.data, cmap=colormap)
 
         if show:
+            if color_map: plt.colorbar(image, label=r"[${\log}_{10}(N_{HI}/cm^{-1})$]")
             plt.show()
+        
+        return image
     
     def plot_fits_RM_overlay(rms, image, scale=1, show=True, index=-1, pixel_corners=[], title_prefix=""):
         if not index.isdigit() or index >= 0: plt.title(title_prefix+(" " if title_prefix else "")+"RM field for HVC "+str(index))
         
         honours_plot.plot_RMs(rms, scale=scale)
-        honours_plot.plot_fits(image, False)
+        image = honours_plot.plot_fits(image, False)
 
         if pixel_corners: plt.scatter((pixel_corners[2][0]-pixel_corners[1][0]),(pixel_corners[2][1]-pixel_corners[0][1]), marker='x', color=(0, 0, 0, 1))
         
         if show:
+            plt.colorbar(image, label=r"[${\log}_{10}(N_{HI}/cm^{-1})$]")
             plt.show()
+
+        return image
     
     def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="gist_rainbow", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs", return_color=False):
         b_list = rms['ra_dec_obj'].galactic.b
@@ -87,7 +95,7 @@ class honours_plot:
             return scatter
 
     def plot_heatmap_single(RMs, x_col='RM', y_col="interpolation_raw", xlabel="", ylabel="", title="", bins=20, rng=[[-80, 80], [-180, 180]], show=True):
-        plt.hist2d(RMs[x_col], RMs[y_col], bins=bins, range=rng)
+        hist = plt.hist2d(RMs[x_col], RMs[y_col], bins=bins, range=rng)
 
         if xlabel: plt.xlabel(xlabel)
         if ylabel: plt.ylabel(ylabel)
@@ -95,6 +103,8 @@ class honours_plot:
 
         if show:
             plt.show()
+        
+        return hist
     
     def plot_H_alpha(Ha, bins=100, rng=(0,5), show=True):
         plt.hist(Ha, bins, rng, color=[0.8, 0.1, 0.8, 0.6])
@@ -104,11 +114,28 @@ class honours_plot:
 
         if show:
             plt.show()
+    
+    def plot_HI(H1, bins=100, rng=(0,5), show=True):
+        plt.hist(H1, bins, rng, color=[0.8, 0.1, 0.8, 0.6])
+        plt.title("RM gird point H-alpha fluxes")
+        plt.xlabel(r"Flux [$R$]")
+        plt.ylabel("Counts")
 
-    def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]"):
-        if set_1_name: plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4])
-        if set_2_name: plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4])
-        plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4])
+        if show:
+            plt.show()
+
+    def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", maximum=0):
+
+        y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
+        if not maximum: maximum = y.max()*1.5
+
+        plt.ylim(0, maximum)
+        if set_1_name:
+            plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4], density=True)
+            plt.ylim(0, maximum)
+        if set_2_name:
+            plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4], density=True)
+            plt.ylim(0, maximum)
         plt.legend()
         if ylabel: plt.ylabel(ylabel)
         if xlabel: plt.xlabel(xlabel)
@@ -116,6 +143,8 @@ class honours_plot:
 
         if show:
             plt.show()
+    
+        return maximum
     
     def plot_3hist(set_1, set_2, set_3, set_1_name="", set_2_name="", set_3_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]"):
         if set_1_name: plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4])
@@ -156,11 +185,13 @@ class honours_plot:
             plt.show()
 
     def plot_multiple_HVCs_with_RM_sets(snapshots, scale=1, size=6, show=True):
+        image = None
+
         ny_plots = len(snapshots)
 
-        plt.figure(figsize=(size*3, ny_plots*size))
+        fig = plt.figure(figsize=((4+(size*3), ny_plots*size)))
 
-        plt.rcParams.update({'font.size': 1 + (size)*2})
+        plt.rcParams.update({'font.size': (size)*2})
 
         plt.tight_layout(pad=0)
 
@@ -178,8 +209,12 @@ class honours_plot:
             plt.axis([0, snapshot['HI'].shape[0]-2, 0, snapshot['HI'].shape[1]-2])
             plt.tight_layout(w_pad=0, h_pad=1)
             plt.margins(tight=True)
-            honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale, title_prefix=titleword[s % 3])
-        
+            image = honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale, title_prefix=titleword[s % 3])
+
+        fig.subplots_adjust(right=0.8)
+        cbar_ax = fig.add_axes([0.85, 0.15, 0.025, 0.7])
+        fig.colorbar(image, cax=cbar_ax, label=r"HI Intensity [${\log}_{10}(N_{HI}/cm^{-1})$]")
+
         if show:
             plt.show()
 
