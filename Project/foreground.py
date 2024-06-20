@@ -87,3 +87,7 @@ class foreground_remover:
     def restore_foreground(k_space, interpolation):
         corr_fg = Dict2Obj({"header":interpolation.header, "data":foreground_remover.get_corrected_image(k_space).real})
         return corr_fg
+    
+class interpolation_comparison:
+    def compare_interpolations():
+        return 0

@@ -50,12 +50,13 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_fits(image, show=True, color_map="Greys"):
+    def plot_fits(image, show=True, color_map="Greys", scale_function=(lambda x: x)):
         if color_map: colormap = plt.colormaps[color_map]
+        else: colormap = None
 
         plt.xticks([])
         plt.yticks([])
-        image = plt.imshow(image.data, cmap=colormap)
+        image = plt.imshow(scale_function(image.data), cmap=colormap, origin='lower')
 
         if show:
             if color_map: plt.colorbar(image, label=r"[${\log}_{10}(N_{HI}/cm^{-1})$]")

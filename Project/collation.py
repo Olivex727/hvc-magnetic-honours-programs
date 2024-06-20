@@ -128,7 +128,7 @@ class collator:
                 print("Saving processed RM table")
                 collation_tools.write_processed(RMs, save_data)
             print("Collation complete")
-            return {"RMs":RMs, "HVCs":HVCs, "HI":HIem, "H-alpha":H_alpha[0], "interpolation":interp}
+            return {"RMs":RMs, "HVCs":HVCs, "HI":HIem, "H-alpha":H_alpha[0], "H-alpha_err":H_alpha[1], "interpolation":interp}
     
     def collate(RMs, Ha_img, Ha_err):
         Ha_eco = []
