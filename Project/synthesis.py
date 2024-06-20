@@ -108,17 +108,17 @@ class hvc_looper:
 class magnetic_field_derivation:
 
     # DO NOT USE (YET)
-    def get_magnetic_field_HVC(cropped_data):
+    def get_magnetic_field_HVC(cropped_data, X=1):
         return magnetic_field_derivation.get_magnetic_field_points(cropped_data["RMs"])
 
-    def get_magnetic_field_points(rm_table, path_length=1):
+    def get_magnetic_field_points(rm_table, X=1):
         print("=== CONVERTING RM TABLE ===")
-        B_name = ["raw", "int", "cor"]
-        B_list = [[], [], []]
-        B_unc_list = [[], [], []]
+        B_name = ["raw", "int"]
+        B_list = [[], []]
+        B_unc_list = [[], []]
         l = len(rm_table)
         for index in range(len(rm_table)):
-            B = magnetic_field_derivation.get_magnetic_field_point(rm_table[index], path_length)
+            B = magnetic_field_derivation.get_magnetic_field_point(rm_table[index], X)
             for i in range(len(B_name)):
                 B_list[i].append(B[i].n)
                 B_unc_list[i].append(B[i].s)
@@ -137,26 +137,25 @@ class magnetic_field_derivation:
         return rm_table_new
 
     # Returns magnetic field in gauss
-    def get_magnetic_field_point(rm_point, path_length=1):
+    def get_magnetic_field_point(rm_point, X=1):
         return calculate.B_virt(
-            rm_point["H-alpha flux"],
-            rm_point["H-alpha flux [Error]"],
+            rm_point["HI"],
+            rm_point["HI [Error]"],
             rm_point["RM"],
             rm_point["RM_uncert"],
             rm_point["interpolation_raw"],
             rm_point["interpolation_unc"],
-            rm_point["interpolation_cor"]
+            X=X
             )
 
 class calculate:
 
     # Returns in gauss
-    def B_virt(H_alpha, H_alpha_err, rm, rm_unc, interp, interp_unc, interp_cor, intrinsic_unc=7):
-        div = 0.81 * (calculate.path_length() * calculate.EM(H_alpha, H_alpha_err)) ** 0.5
+    def B_virt(H1, H1_err, rm, rm_unc, interp, interp_unc, intrinsic_unc=7, X=1):
+        div = X * calculate.N_HI(H1, H1_err)
         RMs = [
-            1e-6 * calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc)/div,
-            1e-6 * calculate.RM(rm, rm_unc, interp, interp_unc, intrinsic_unc=intrinsic_unc)/div,
-            1e-6 * calculate.RM(rm, rm_unc, interp_cor, interp_unc, intrinsic_unc=intrinsic_unc)/div
+            3.8e18 * calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc)/div,
+            3.8e18 * calculate.RM(rm, rm_unc, interp, interp_unc, intrinsic_unc=intrinsic_unc)/div
             ]
 
         return RMs
@@ -182,6 +181,13 @@ class calculate:
     # Path length is in parsecs
     def path_length():
         return 1
+    
+    # HI Column Density
+    def N_HI(H1, H1_err, individual_override=0):
+        if individual_override:
+            return ufloat(10 ** individual_override, 10 ** (0.5 * individual_override))
+        else:
+            return ufloat(H1, H1_err)
     
 class postprocess_analysis:
 

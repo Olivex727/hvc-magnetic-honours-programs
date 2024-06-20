@@ -19,8 +19,8 @@ class interpolate:
                 hdu_err = fits.open("../data_preprocessed/Hutschenreuter_2020_faraday_sky_woff_std.fits")[0]
                 return hdu_main, hdu_err, foreground_remover.get_k_space(hdu_main.data), foreground_remover.get_k_space(hdu_err.data)
     
-    def fourier_interpolate(interpolation, k_space, hvc_area_range):
-        filtered_k_space = foreground_remover.filter_k_space(k_space, hvc_area_range)
+    def fourier_interpolate(interpolation, k_space, hvc_area_range, crosshatch=True):
+        filtered_k_space = foreground_remover.filter_k_space(k_space, hvc_area_range, crosshatch=crosshatch)
         return foreground_remover.restore_foreground(filtered_k_space, interpolation)
 
 # Return set of corrected RM points
@@ -44,6 +44,12 @@ class foreground_remover:
     
         return base
     
+    def punch_annulus_kernel(base, inner_radius, outer_radius, centre=False):
+        base = base - 1
+        base = foreground_remover.punch_annulus(base, inner_radius, outer_radius, centre) + 1
+        base = base / np.sum(base)
+        return base
+    
     def convert_size_to_frequency(theta_hvc, l_shape=8640):
         R = l_shape / 360
         f_hvc = 1/(2*theta_hvc*R)
@@ -61,24 +67,33 @@ class foreground_remover:
     
         return base
     
-    def filter_k_space(k_space, size_params=(1,np.pi)):
-        fx, fy = foreground_remover.get_freq_domains(k_space)
+    def filter_k_space(k_space, size_params=(1,np.pi), crosshatch=True):
+        if crosshatch:
+            fx, fy = foreground_remover.get_freq_domains(k_space)
 
-        crosshatch_space = ((k_space.real * 0) + 1)
-        hvc_f_range_pos = tuple(map(foreground_remover.convert_size_to_frequency, size_params))[::-1]
-        hvc_f_range_neg = tuple(map(lambda x: - x, map(foreground_remover.convert_size_to_frequency, size_params)))
+            crosshatch_space = ((k_space.real * 0) + 1)
+            hvc_f_range_pos = tuple(map(foreground_remover.convert_size_to_frequency, size_params))[::-1]
+            hvc_f_range_neg = tuple(map(lambda x: - x, map(foreground_remover.convert_size_to_frequency, size_params)))
 
-        x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fx)
-        y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fy)
+            x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fx)
+            y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fy)
 
-        crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
+            crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
 
-        x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fx)
-        y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fy)
+            x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fx)
+            y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fy)
 
-        crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
-        new_k_space = crosshatch_space*k_space
-        return new_k_space
+            crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
+            new_k_space = crosshatch_space*k_space
+            return new_k_space
+        
+        else:
+            base = (k_space * 0)
+            dpp = len(base)/180
+            base = foreground_remover.punch_annulus_kernel(base, dpp*size_params[0], dpp*size_params[1])
+            sinc_space = foreground_remover.get_k_space(base)
+            new_k_space = sinc_space*k_space
+            return new_k_space
     
     def get_corrected_image(k_space):
         return fft.ifft2(k_space)

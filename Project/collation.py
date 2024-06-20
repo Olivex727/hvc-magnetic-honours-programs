@@ -84,11 +84,11 @@ class file_find:
         err = fits.open("../data_catalog/Halpha_error.fits")[0]
         return img, err
     
-    def get_interpolation(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True, fourier_correct=True, hvc_area_range=(1, np.pi)):
+    def get_interpolation(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True, fourier_correct=True, hvc_area_range=(1, np.pi), crosshatch=True):
         interpolation, error, k_space, k_err = intp.interpolate(RMs, use_H_alpha, H_alpha, calculate_interpolation)
         if fourier_correct:
-            corrected = intp.fourier_interpolate(interpolation, k_space, hvc_area_range)
-            corrected_err = intp.fourier_interpolate(error, k_err, hvc_area_range) # Linear FT correction
+            corrected = intp.fourier_interpolate(interpolation, k_space, hvc_area_range, crosshatch=crosshatch)
+            corrected_err = intp.fourier_interpolate(error, k_err, hvc_area_range, crosshatch=crosshatch) # Linear FT correction
         else:
             corrected = []
             corrected_err = []
@@ -97,7 +97,7 @@ class file_find:
 class collator:
 
     # WARNING: Collating the RMs from scratch may take some time, make sure to specify a file to save the list in, and load on all future usages of this function, so that it only needs to run once.
-    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data=["", ""], h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits", override_RMs=False):
+    def data_whole_sky(calculate_interpolation, hvc_area_range=(1, np.pi), full_hvc_range=False, save_data="", load_data=["", ""], h1_img="../data_catalog/hi4pi-hvc-nhi-car.fits", override_RMs=False, crosshatch=True):
         with warnings.catch_warnings(): #warnings.catch_warnings(action="ignore", category=verwarn)warnings.catch_warnings(action="ignore", category=fitswarn):
             warnings.simplefilter("ignore")
             print("=== WHOLE-SKY DATA COLLATION ===")
@@ -123,7 +123,7 @@ class collator:
             print("Getting HI emission")
             HIem = file_find.get_HI_emission(h1_img)
             print("Interpolating")
-            interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation, fourier_correct=(not full_hvc_range), hvc_area_range=hvc_area_range)
+            interp = file_find.get_interpolation(calculate_interpolation=calculate_interpolation, fourier_correct=(not full_hvc_range), hvc_area_range=hvc_area_range, crosshatch=crosshatch)
             if save_data:
                 print("Saving processed RM table")
                 collation_tools.write_processed(RMs, save_data)
@@ -343,7 +343,7 @@ class collation_tools:
         return hvcs
     
     # WARNING: This function takes a long time to execute, make sure to specify a file to save the updated RMs, so that it only needs to run once.
-    def add_interpolations(RMs, interpolation_pre=[], interpolation_post=[], interpolation_std=[], interpolation_post_err=[], save_file=""):
+    def add_interpolations(RMs, interpolation_pre=[], interpolation_post=[], interpolation_std=[], interpolation_post_err=[], save_file="", overwrite=False):
         with warnings.catch_warnings(action="ignore", category=fitswarn):
             print("=== COLLATING INTERPOLATION ===")
             new_RMs = copy.deepcopy(RMs)
@@ -381,6 +381,8 @@ class collation_tools:
 
             print("Adding interpolations")
     
+            if overwrite: new_RMs.remove_columns(["interpolation_raw", "interpolation_cor", "interpolation_unc", "interpolation_cor_unc"])
+
             if collect_pre:
                 new_RMs.add_column(pre_fg_list, name="interpolation_raw")
                 new_RMs["interpolation_raw"].unit = u.rad / (u.m ** 2)
