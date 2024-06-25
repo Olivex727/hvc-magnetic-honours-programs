@@ -129,10 +129,10 @@ class honours_plot:
 
         if not second:
             y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
-            if not maximum: maximum = y.max()*1.5
+            if not maximum: maximum = y.max()*1.05
         elif set_2_name:
             y, x, _ = plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4], density=True)
-            if not maximum: maximum = y.max()*1.5
+            if not maximum: maximum = y.max()*1.05
 
         plt.ylim(0, maximum)
         if set_1_name:
