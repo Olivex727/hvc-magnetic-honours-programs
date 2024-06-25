@@ -27,23 +27,24 @@ verwarn = fits.verify.VerifyWarning
 
 class file_find:
 
-    def get_RMs(file='../data_catalog/main_table_17May2024', ext=".fits"):
+    def get_RMs(file='../data_catalog/main_table_17May2024', ext=".fits", disable_modifications=False):
         if ext == ".ecsv": return ascii.read(file+ext) #"../data_catalog/CASDA_RMs.ecsv"
         if ext == ".fits":
             # Must manually add the ra_dec_obj column
             t = Table(fits.open(file+ext)[1].data)
-            t.remove_column('ra_dec_obj.ra')
-            t.remove_column('ra_dec_obj.dec')
-            t['RM'].unit = u.rad / (u.m ** 2)
-            t['RM_uncert'].unit = u.rad / (u.m ** 2)
-            tobj = []
-            l = len(t)
-            for rm_index in range(len(t)):
-                rm_point = t[rm_index]['ra_dec_deg']
-                tobj.append(SkyCoord(ra=rm_point[0]*u.degree, dec=rm_point[1]*u.degree, frame='icrs'))
-                print(str(int(rm_index/l*100))+"% \r", sep="", end="", flush=True)
-            print("Converting coordinates")
-            t.add_column(tobj, 0,'ra_dec_obj')
+            if not disable_modifications:
+                t.remove_column('ra_dec_obj.ra')
+                t.remove_column('ra_dec_obj.dec')
+                t['RM'].unit = u.rad / (u.m ** 2)
+                t['RM_uncert'].unit = u.rad / (u.m ** 2)
+                tobj = []
+                l = len(t)
+                for rm_index in range(len(t)):
+                    rm_point = t[rm_index]['ra_dec_deg']
+                    tobj.append(SkyCoord(ra=rm_point[0]*u.degree, dec=rm_point[1]*u.degree, frame='icrs'))
+                    print(str(int(rm_index/l*100))+"% \r", sep="", end="", flush=True)
+                print("Converting coordinates")
+                t.add_column(tobj, 0,'ra_dec_obj')
             return t
 
     def get_HI_emission(h1_img):

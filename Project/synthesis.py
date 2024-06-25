@@ -43,7 +43,7 @@ class hvc_looper:
             else: rm_load_file = ""
 
             with contextlib.redirect_stdout(None):
-                rmb = magnetic_field_derivation.get_magnetic_field_points(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], plot=False, rm_load_file=rm_load_file)["RMs"])
+                rmb = magnetic_field_derivation.get_magnetic_field_points(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], plot=False, rm_load_file=rm_load_file), index=index)
 
                 if save_directory: ct.write_processed(rmb, save_directory+"hvc_rms_index_"+str(index)+"_with_B")
 
@@ -111,14 +111,17 @@ class magnetic_field_derivation:
     def get_magnetic_field_HVC(cropped_data, X=1):
         return magnetic_field_derivation.get_magnetic_field_points(cropped_data["RMs"])
 
-    def get_magnetic_field_points(rm_table, X=1):
+    def get_magnetic_field_points(collated_data, X=1, index=0):
         print("=== CONVERTING RM TABLE ===")
         B_name = ["raw", "int"]
         B_list = [[], []]
         B_unc_list = [[], []]
+        rm_table = collated_data["RMs"]
+        hvc = collated_data["HVC"]
+
         l = len(rm_table)
         for index in range(len(rm_table)):
-            B = magnetic_field_derivation.get_magnetic_field_point(rm_table[index], X)
+            B = magnetic_field_derivation.get_magnetic_field_point(rm_table[index], X, hvc["NH"], hvc["e_NH"])
             for i in range(len(B_name)):
                 B_list[i].append(B[i].n)
                 B_unc_list[i].append(B[i].s)
@@ -137,10 +140,10 @@ class magnetic_field_derivation:
         return rm_table_new
 
     # Returns magnetic field in gauss
-    def get_magnetic_field_point(rm_point, X=1):
+    def get_magnetic_field_point(rm_point, X=1, H1=None, e_H1=None):
         return calculate.B_virt(
-            rm_point["HI"],
-            rm_point["HI [Error]"],
+            H1,
+            e_H1,
             rm_point["RM"],
             rm_point["RM_uncert"],
             rm_point["interpolation_raw"],
@@ -152,7 +155,7 @@ class calculate:
 
     # Returns in gauss
     def B_virt(H1, H1_err, rm, rm_unc, interp, interp_unc, intrinsic_unc=7, X=1):
-        div = X * calculate.N_HI(H1, H1_err)
+        div = X * calculate.N_HI(H1, H1_err) * 1e6
         RMs = [
             3.8e18 * calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc)/div,
             3.8e18 * calculate.RM(rm, rm_unc, interp, interp_unc, intrinsic_unc=intrinsic_unc)/div
