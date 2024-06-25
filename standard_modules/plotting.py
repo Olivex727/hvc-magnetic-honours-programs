@@ -125,18 +125,27 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", maximum=0):
+    def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", maximum=0, second=False):
 
-        y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
-        if not maximum: maximum = y.max()*1.5
+        if not second:
+            y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
+            if not maximum: maximum = y.max()*1.5
+        elif set_2_name:
+            y, x, _ = plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4], density=True)
+            if not maximum: maximum = y.max()*1.5
 
         plt.ylim(0, maximum)
         if set_1_name:
             plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4], density=True)
             plt.ylim(0, maximum)
-        if set_2_name:
+
+        if set_2_name and not second:
             plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4], density=True)
             plt.ylim(0, maximum)
+        else:
+            plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
+            plt.ylim(0, maximum)
+
         plt.legend()
         if ylabel: plt.ylabel(ylabel)
         if xlabel: plt.xlabel(xlabel)
