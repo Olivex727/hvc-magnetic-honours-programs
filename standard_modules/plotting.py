@@ -54,12 +54,12 @@ class honours_plot:
         if color_map: colormap = plt.colormaps[color_map]
         else: colormap = None
 
-        plt.xticks([])
-        plt.yticks([])
         image = plt.imshow(scale_function(image.data), cmap=colormap, origin='lower')
 
         if show:
             if color_map: plt.colorbar(image, label=r"[${\log}_{10}(N_{HI}/cm^{-1})$]")
+            plt.xticks([])
+            plt.yticks([])
             plt.show()
         
         return image
@@ -169,7 +169,7 @@ class honours_plot:
             plt.show()
 
     # NB: Plots must come in multiples of 3
-    def plot_multiple_HVCs(snapshots, scale=1, size=6, show=True):
+    def plot_multiple_HVCs(snapshots, scale=1, size=6, show=True, add_circles=False):
         ny_plots = int(len(snapshots) / 3)
 
         plt.figure(figsize=(size*3, ny_plots*size))
@@ -183,13 +183,20 @@ class honours_plot:
             rm_overlay = np.array([
                 snapshot["RMs"]["pixel location x"],
                 snapshot["RMs"]["pixel location y"],
-                snapshot["RMs"]["RM"]
+                snapshot["RMs"]["RM"] - snapshot["RMs"]["interpolation_raw"]
                 ])
             plt.subplot(ny_plots, 3, s+1)
             plt.axis([0, snapshot['HI'].shape[0]-2, 0, snapshot['HI'].shape[1]-2])
             plt.tight_layout(w_pad=0, h_pad=1)
             plt.margins(tight=True)
             honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale)
+            plt.xticks([])
+            plt.yticks([])
+            if add_circles:
+                xlim = plt.xlim()
+                ylim = plt.ylim()
+                circle = plt.Circle((sum(xlim)/2, sum(ylim)/2), sum(xlim)/4, color='black', fill=False)
+                plt.gca().add_patch(circle)
         
         if show:
             plt.show()

@@ -77,7 +77,7 @@ class hvc_looper:
         print("Process complete")
 
 
-    def plot_HVC_selection(hvc_indicies, collated_data, hvc_override=[], rm_load=True, scale=1, size=6, plot_cross_source=False):
+    def plot_HVC_selection(hvc_indicies, collated_data, hvc_override=[], rm_load=True, scale=1, size=6, plot_cross_source=False, add_circles=False):
         snapshots = []
         print("=== GENERATING MULTIPLE HVC PLOTS ===")
         print("Calculating HVC data")
@@ -99,7 +99,7 @@ class hvc_looper:
             print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
         
         print("Plotting HVC data")
-        if plot_cross_source: hplt.plot_multiple_HVCs(snapshots, scale=scale, size=size)
+        if plot_cross_source: hplt.plot_multiple_HVCs(snapshots, scale=scale, size=size, add_circles=add_circles)
         else: hplt.plot_multiple_HVCs_with_RM_sets(snapshots, scale=scale, size=size)
 
         print("Process complete")
