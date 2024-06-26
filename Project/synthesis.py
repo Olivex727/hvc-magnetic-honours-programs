@@ -54,15 +54,23 @@ class hvc_looper:
         print("Process complete")
         return rmbs
     
-    def load_HVC_RMs(collated_data, directory="../data_processed/hvc_rms/", has_B=True):
+    def load_HVC_RMs(collated_data, hvc_indicies=[], directory="../data_processed/hvc_rms/", has_B=True):
         print("=== HVC RM LOADER ===")
         print("Taking HVC snapshots")
+
         rms = []
-        l = len(collated_data["HVCs"])
-        for index in range(l):
+
+        if not bool(hvc_indicies): hvc_indicies = list(range(len(collated_data["HVCs"])))
+        l = len(hvc_indicies)
+
+        for i in range(l):
+            index = hvc_indicies[i]
+
             with contextlib.redirect_stdout(None):
                 rms.append(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], rm_load_file=directory+"hvc_rms_index_"+str(index)+("_with_B" if has_B else ""))["RMs"])
+
             print(str(int((index+1)/l*100))+"% \r", sep="", end="", flush=True)
+            
         print("Process complete")
         return rms
     
