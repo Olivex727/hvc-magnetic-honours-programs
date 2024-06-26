@@ -19,8 +19,8 @@ class interpolate:
                 hdu_err = fits.open("../data_preprocessed/Hutschenreuter_2020_faraday_sky_woff_std.fits")[0]
                 return hdu_main, hdu_err, foreground_remover.get_k_space(hdu_main.data), foreground_remover.get_k_space(hdu_err.data)
     
-    def fourier_interpolate(interpolation, k_space, hvc_area_range, crosshatch=True):
-        filtered_k_space = foreground_remover.filter_k_space(k_space, hvc_area_range, crosshatch=crosshatch)
+    def fourier_interpolate(interpolation, k_space, hvc_area_range, crosshatch=True, scale=0):
+        filtered_k_space = foreground_remover.filter_k_space(k_space, hvc_area_range, crosshatch=crosshatch, scale=scale)
         return foreground_remover.restore_foreground(filtered_k_space, interpolation)
 
 # Return set of corrected RM points
@@ -59,15 +59,15 @@ class foreground_remover:
         fftfreq_range = list(map(lambda x: f_range[0] < x < f_range[1], fftfreq))
         return fftfreq_range
 
-    def punch_crosshatch(base, x_mask, y_mask):
+    def punch_crosshatch(base, x_mask, y_mask, scale=0):
         for y in range(len(base)):
             for x in range(len(base[y])):
                 if x_mask[x] or y_mask[y]:
-                    base[y][x] = 0
+                    base[y][x] = scale
     
         return base
     
-    def filter_k_space(k_space, size_params=(1,np.pi), crosshatch=True):
+    def filter_k_space(k_space, size_params=(1,np.pi), crosshatch=True, scale=0):
         if crosshatch:
             fx, fy = foreground_remover.get_freq_domains(k_space)
 
@@ -78,12 +78,12 @@ class foreground_remover:
             x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fx)
             y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_pos, fy)
 
-            crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
+            crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range, scale)
 
             x_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fx)
             y_range = foreground_remover.convert_frequency_to_pixel(hvc_f_range_neg, fy)
 
-            crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range)
+            crosshatch_space = foreground_remover.punch_crosshatch(crosshatch_space, x_range, y_range, scale)
             new_k_space = crosshatch_space*k_space
             return new_k_space
         
