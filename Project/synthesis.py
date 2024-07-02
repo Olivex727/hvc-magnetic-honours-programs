@@ -14,6 +14,10 @@ from uncertainties import umath
 from astropy import units as u
 from astropy.units import astrophys as astru
 
+import numpy as np
+import scipy.stats as stats
+from astropy.table import Table
+
 import copy
 
 import contextlib
@@ -27,6 +31,18 @@ class hvc_looper:
 
     def add_magnetic_field_HVCs(collated_data, hvc_indicies=[], save_directory="../data_processed/", rm_load=True):
         return 0
+    
+    def KStest_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", save_file="../data_processed/hvc_KS_tests/hvc_KS", p_value=0.05, morph_type="average"):
+        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
+        results = KStest.KStest_HVCs(master_hvcs, p_value=p_value, morph_type="average")
+        print("Converting")
+        table_stat = Table(rows=results)
+        if save_file:
+            print("Saving data")
+            ct.write_processed(table_stat, save_file+"_"+morph_type)
+        print("Process Complete")
+        return table_stat
+
 
     def add_magnetic_field_RMs(collated_data, hvc_indicies=[], save_directory="../data_processed/hvc_rms/", rm_load=True):
         rmbs = []
@@ -69,7 +85,27 @@ class hvc_looper:
             with contextlib.redirect_stdout(None):
                 rms.append(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], rm_load_file=directory+"hvc_rms_index_"+str(index)+("_with_B" if has_B else ""))["RMs"])
 
-            print(str(int((index+1)/l*100))+"% \r", sep="", end="", flush=True)
+            print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
+            
+        print("Process complete")
+        return rms
+    
+    def load_HVCs(collated_data, hvc_indicies=[], directory="../data_processed/hvc_rms/", has_B=True):
+        print("=== HVC RM LOADER ===")
+        print("Taking HVC snapshots")
+
+        rms = []
+
+        if not bool(hvc_indicies): hvc_indicies = list(range(len(collated_data["HVCs"])))
+        l = len(hvc_indicies)
+
+        for i in range(l):
+            index = hvc_indicies[i]
+
+            with contextlib.redirect_stdout(None):
+                rms.append(snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], rm_load_file=directory+"hvc_rms_index_"+str(index)+("_with_B" if has_B else "")))
+
+            print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
             
         print("Process complete")
         return rms
@@ -199,6 +235,66 @@ class calculate:
             return ufloat(10 ** individual_override, 10 ** (0.5 * individual_override))
         else:
             return ufloat(H1, H1_err)
+        
+class KStest:
+
+    def column_to_array(data):
+        return np.sort(data.data*1e6)
+
+    def split_RMs(RMs, centre, max_distance):
+        mask = np.zeros(len(RMs), dtype=bool)
+        for i in range(len(RMs)):
+            rmi = RMs[i]
+            mask[i] = rmi["ra_dec_obj"].separation(centre).value < max_distance
+
+        RMs_inner = RMs[~mask]
+        RMs_outer = RMs[mask]
+
+        return RMs_inner, RMs_outer
+
+    def morph_ring(hvc_snap, morph_type="average"):
+        if morph_type == "average":
+            return (hvc_snap["HVC"]["dx"] + hvc_snap["HVC"]["dy"])/2
+
+    def make_cdfs(inner, outer):
+        inner_data = inner
+        inner_cdf = stats.norm.cdf(inner_data)
+
+        outer_data = outer
+        outer_cdf = stats.norm.cdf(outer_data)
+
+        return inner_data, inner_cdf, outer_data, outer_cdf
+
+    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average"):
+        hvc_snap = snapshots[index]
+        inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap, morph_type=morph_type))
+        inner = KStest.column_to_array(inner_rms["B_virtual [int]"])
+        outer = KStest.column_to_array(outer_rms["B_virtual [int]"])
+
+        print("Analysing HVC: " + hvc_snap["HVC"]["Name"])
+
+        if show:
+            inner_data, inner_cdf, outer_data, outer_cdf = KStest.make_cdfs(inner, outer)
+
+            hplt.plot_cdfs(inner_data, inner_cdf, outer_data, outer_cdf)
+
+        ks_test = stats.ks_2samp(inner, outer)#, nan_policy='omit')
+
+        if not dict_answer:
+            return ks_test
+        else:
+            return {"Name":hvc_snap["HVC"]["Name"], "Statistic":ks_test.statistic, "p_value":ks_test.pvalue, "Statistic_x":ks_test.statistic_location, "Statistic_sgn":ks_test.statistic_sign, "Significant": ks_test.pvalue < p_value}
+        
+    def KStest_HVCs(snapshots, show=False, dict_answer=True, p_value=0.05, morph_type="average"):
+        print("=== HVC KS TESTING ===")
+        KSlist = []
+        l = len(snapshots)
+        print("Performing KS Tests")
+        for i in range(len(snapshots)):
+            with contextlib.redirect_stdout(None):
+                KSlist.append(KStest.KStest_single(snapshots, index=i, show=show, dict_answer=dict_answer, p_value=p_value, morph_type=morph_type))
+            print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
+        return KSlist
     
 class postprocess_analysis:
 

@@ -274,3 +274,8 @@ class honours_plot:
 
         if show:
             plt.show()
+
+    def plot_cdfs(data1, cdf1, data2, cdf2):
+        plt.plot(data1, cdf1)
+        plt.plot(data2, cdf2)
+        plt.show()
