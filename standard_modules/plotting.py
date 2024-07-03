@@ -30,7 +30,7 @@ class honours_plot:
         if index >= 0: plt.title("Location of HVC index "+str(index))
         plt.xticks([])
         plt.yticks([])
-        plt.imshow(image.data)
+        plt.imshow(image.data, origin='lower')
         if not pix_c == [0, 0]: plt.plot(*pix_c, 'bx', ms=1)
         plt.gca().add_patch(Rectangle(
             (pix_up[0], pix_down[1]),
@@ -43,7 +43,7 @@ class honours_plot:
 
         plt.xticks([])
         plt.yticks([])
-        plt.imshow(image_cropped)
+        plt.imshow(image_cropped, origin='lower')
         if not pix_c == [0, 0]: plt.plot((pix_c[0]-pix_up[0]),(pix_c[1]-pix_down[1]), 'rx')
         if index >= 0: plt.title("HVC index "+str(index))
 
