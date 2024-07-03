@@ -255,6 +255,8 @@ class KStest:
     def morph_ring(hvc_snap, morph_type="average"):
         if morph_type == "average":
             return (hvc_snap["HVC"]["dx"] + hvc_snap["HVC"]["dy"])/2
+        if morph_type == "minimum":
+            return min(hvc_snap["HVC"]["dx"], hvc_snap["HVC"]["dy"])
 
     def make_cdfs(inner, outer):
         inner_data = inner
