@@ -438,4 +438,7 @@ class collation_tools:
             print("Process complete")
     
     def write_processed(table, file):
-        table.write(file+".ecsv", format='ascii.ecsv', overwrite=True)  
+        table.write(file+".ecsv", format='ascii.ecsv', overwrite=True)
+    
+    def read_processed(file):
+        return ascii.read(file+".ecsv")
