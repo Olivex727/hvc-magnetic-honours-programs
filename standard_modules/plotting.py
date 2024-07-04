@@ -292,3 +292,32 @@ class honours_plot:
         plt.axhline(y=y_inner, xmin=(20+(x_outer if statsgn < 0 else statx))/40, xmax=(20+(statx if statsgn < 0 else x_outer))/40, c="black", label="Difference")
 
         plt.legend()
+
+    def uncertainty_boxplot(master_rm, single=False, limit=20):
+        rms = master_rm["B_virtual_unc [int]"].data * 1e6
+        B_unc = rms[rms < 20]
+        B_true_unc = np.std(master_rm["B_virtual [int]"].data * 1e6)
+
+        if single:
+            plt.figure(figsize=(6,1))
+            plt.boxplot(B_unc, vert=False, showmeans=True, widths=0.6, sym="x")
+            plt.axvline(B_true_unc, c='r', linestyle='--')
+            plt.yticks([])
+            plt.xlabel(r"Magnetic Field Uncertainties [$\mu G$]")
+        else:
+            plt.boxplot(B_unc, vert=False, showmeans=True, widths=0.6, sym="x")
+            plt.axvline(B_true_unc, c='r', linestyle='--')
+            plt.yticks([])
+
+    def uncertainty_boxplots(master_rm_inner, master_rm_outer):
+        fig = plt.figure(figsize=(6,2.5))
+    
+        fig.supxlabel(r"Magnetic Field Uncertainties [$\mu G$]")
+
+        plt.tight_layout()
+
+        plt.subplot(2, 1, 1)
+        honours_plot.uncertainty_boxplot(master_rm_inner)
+        plt.subplot(2, 1, 2)
+        honours_plot.uncertainty_boxplot(master_rm_outer)
+        plt.subplots_adjust(hspace=0.5, bottom=0.2)

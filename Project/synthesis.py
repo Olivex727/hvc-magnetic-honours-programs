@@ -16,7 +16,7 @@ from astropy.units import astrophys as astru
 
 import numpy as np
 import scipy.stats as stats
-from astropy.table import Table
+from astropy.table import Table, vstack, hstack
 
 import copy
 
@@ -31,6 +31,12 @@ class hvc_looper:
 
     def add_magnetic_field_HVCs(collated_data, hvc_indicies=[], save_directory="../data_processed/", rm_load=True):
         return 0
+    
+    def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_average", save_file="../data_processed/results_pre"):
+        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
+        fwhm_table, _, _ = uncertainty_subtraction.subtract(master_hvcs)
+        results = uncertainty_subtraction.uncertainty_readwrite(fwhm_table, filter_significant, load_file, save_file)
+        return results
     
     def KStest_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", save_file="../data_processed/hvc_KS_tests/hvc_KS", p_value=0.05, morph_type="average"):
         master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
@@ -119,7 +125,6 @@ class hvc_looper:
                 snap.take_snapshot(index, collated_data["RMs"], collated_data["HVCs"], collated_data["HI"], collated_data["H-alpha"], collated_data["interpolation"], rm_save_file=directory+"hvc_rms_index_"+str(index))
             print(str(int((index+1)/l*100))+"% \r", sep="", end="", flush=True)
         print("Process complete")
-
 
     def plot_HVC_selection(hvc_indicies, collated_data, hvc_override=[], rm_load=True, scale=1, size=6, plot_cross_source=False, add_circles=False):
         snapshots = []
@@ -326,8 +331,63 @@ class KStest:
     
 class uncertainty_subtraction:
 
-    def subtract():
-        return 0
+    def subtract(snapshots):
+        master_rm_inner, master_rm_outer, inners, outers = uncertainty_subtraction.get_stacked_sets(snapshots)
+        return uncertainty_subtraction.uncertainty_subtract(inners, outers)
+    
+    def get_stacked_sets(snapshots):
+        inners = []
+        outers = []
+        for hvc_snap in snapshots:
+            inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap))
+            inners.append(inner_rms)
+            outers.append(outer_rms)
+
+        master_rm_inner = vstack(inners)
+        master_rm_outer = vstack(outers)
+
+        return master_rm_inner, master_rm_outer, inners, outers
+    
+    def uncertainty_table(table_list):
+        uncert = []
+        for rms in table_list:
+            m_list = rms["B_virtual_unc [int]"].data * 1e6
+            o_list = rms["B_virtual [int]"].data * 1e6
+
+            meas = np.mean(m_list)
+            obsv = np.std(o_list)
+
+            uncert.append({"Sigma [meas]":meas, "Sigma [obsv]":obsv, "Sigma [true]": np.sqrt(obsv**2 - meas**2)})
+
+        uncert_table = Table(uncert)
+
+        return uncert_table
+
+    def uncertainty_subtract(inners, outers):
+        inner_sigma = uncertainty_subtraction.uncertainty_table(inners)
+        outer_sigma = uncertainty_subtraction.uncertainty_table(outers)
+
+        sub = inner_sigma["Sigma [true]"]-outer_sigma["Sigma [true]"]
+        fwhm = 2 * np.sqrt(2 * np.log(2)) * np.array(sub)
+
+        fwhm_table = copy.deepcopy(inner_sigma)
+
+        fwhm_table.add_column(sub, name="Sigma [diff]")
+        fwhm_table.add_column(fwhm, name="FWHM")
+
+        return fwhm_table, inner_sigma, outer_sigma
+    
+    def uncertainty_readwrite(uncert_table, filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_average", save_file="../data_processed/results_pre"):
+        ks = ct.read_processed(load_file)
+        hks = hstack([ks, uncert_table])
+
+        if filter_significant:
+            hks = hks[hks["Significant"]]
+            hks = hks[~np.isnan(hks["Sigma [diff]"])]
+
+        if save_file: ct.write_processed(hks, save_file)
+
+        return hks
     
 class postprocess_analysis:
 
