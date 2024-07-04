@@ -239,7 +239,7 @@ class calculate:
 class KStest:
 
     def column_to_array(data):
-        return np.sort(data.data*1e6)
+        return data.data*1e6
 
     def split_RMs(RMs, centre, max_distance):
         mask = np.zeros(len(RMs), dtype=bool)
@@ -259,15 +259,18 @@ class KStest:
             return min(hvc_snap["HVC"]["dx"], hvc_snap["HVC"]["dy"])
 
     def make_cdfs(inner, outer):
-        inner_data = inner
-        inner_cdf = stats.norm.cdf(inner_data)
+        xs = np.linspace(-20, 20, 1000)
 
-        outer_data = outer
-        outer_cdf = stats.norm.cdf(outer_data)
+        inner_cdf = np.array(list(map(lambda x: KStest.edf(inner, x), xs)))
+        outer_cdf = np.array(list(map(lambda x: KStest.edf(outer, x), xs)))
 
-        return inner_data, inner_cdf, outer_data, outer_cdf
+        return inner_cdf, outer_cdf, xs
+    
+    def edf(data, x):
+        masked = data[data<x]
+        return len(masked)/len(data)
 
-    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average"):
+    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True):
         hvc_snap = snapshots[index]
         inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap, morph_type=morph_type))
         inner = KStest.column_to_array(inner_rms["B_virtual [int]"])
@@ -275,12 +278,35 @@ class KStest:
 
         print("Analysing HVC: " + hvc_snap["HVC"]["Name"])
 
+        inner_cdf, outer_cdf, xs = KStest.make_cdfs(inner, outer)
+
         if show:
-            inner_data, inner_cdf, outer_data, outer_cdf = KStest.make_cdfs(inner, outer)
+            hplt.plot_cdfs(xs, inner_cdf, xs, outer_cdf, show=False)
 
-            hplt.plot_cdfs(inner_data, inner_cdf, outer_data, outer_cdf)
+        ks_test = stats.ks_2samp(inner, outer)
 
-        ks_test = stats.ks_2samp(inner, outer)#, nan_policy='omit')
+        if find_diff:
+            statx = ks_test.statistic_location
+            statsgn = ks_test.statistic_sign
+            statv = ks_test.statistic_sign
+
+            y_inner = KStest.edf(inner, statx)
+
+            y_outer = 0
+            x_outer = 0
+            for x in xs:
+                y_outer = KStest.edf(outer, x)
+                if y_outer >= y_inner:
+                    x_outer = x
+                    break
+
+            diff = statx - x_outer
+
+            if show:
+                hplt.plot_cdf_lines(statx, statsgn, statv, y_inner, x_outer)
+
+            if dict_answer:
+                return {"Name":hvc_snap["HVC"]["Name"], "Statistic":ks_test.statistic, "p_value":ks_test.pvalue, "Statistic_x":ks_test.statistic_location, "Statistic_sgn":ks_test.statistic_sign, "Statistic_diff":diff, "Significant": ks_test.pvalue < p_value}
 
         if not dict_answer:
             return ks_test

@@ -275,7 +275,20 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_cdfs(data1, cdf1, data2, cdf2):
-        plt.plot(data1, cdf1)
-        plt.plot(data2, cdf2)
-        plt.show()
+    def plot_cdfs(data1, cdf1, data2, cdf2, show=False):
+        plt.plot(data1, cdf1, label="Inner")
+        plt.plot(data2, cdf2, label="Outer")
+        plt.xlabel(r"Virtual Magnetic Field [$\mu G$]")
+        plt.ylabel(r"Cumulative Proportion")
+        plt.xlim(-20, 20)
+        plt.ylim(0,1)
+        plt.legend()
+        if show:
+            plt.show()
+
+    def plot_cdf_lines(statx, statsgn, statv, y_inner, x_outer):
+        plt.axvline(x=statx, ymin=y_inner if statsgn < 0 else y_inner-statv, ymax=y_inner+statv if statsgn < 0 else y_inner, c="red", label="Statisitc")
+
+        plt.axhline(y=y_inner, xmin=(20+(x_outer if statsgn < 0 else statx))/40, xmax=(20+(statx if statsgn < 0 else x_outer))/40, c="black", label="Difference")
+
+        plt.legend()
