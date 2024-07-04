@@ -125,7 +125,7 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", maximum=0, second=False):
+    def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", maximum=0, second=False, legend_size=14):
 
         if not second:
             y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
@@ -146,7 +146,7 @@ class honours_plot:
             plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
             plt.ylim(0, maximum)
 
-        plt.legend()
+        plt.legend(fontsize=legend_size, loc='upper right')
         if ylabel: plt.ylabel(ylabel)
         if xlabel: plt.xlabel(xlabel)
         if title: plt.title(title)
@@ -156,11 +156,11 @@ class honours_plot:
     
         return maximum
     
-    def plot_3hist(set_1, set_2, set_3, set_1_name="", set_2_name="", set_3_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]"):
+    def plot_3hist(set_1, set_2, set_3, set_1_name="", set_2_name="", set_3_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", legend_size=14):
         if set_1_name: plt.hist(set_1, bins, bounds, label=set_1_name, color=[0.8, 0.1, 0.1, 0.4])
         if set_2_name: plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4])
         if set_3_name: plt.hist(set_3, bins, bounds, label=set_3_name, color=[0.1, 0.1, 0.8, 0.4])
-        plt.legend()
+        plt.legend(fontsize=legend_size, loc='upper right')
         if ylabel: plt.ylabel(ylabel)
         if xlabel: plt.xlabel(xlabel)
         if title: plt.title(title)
@@ -174,7 +174,7 @@ class honours_plot:
 
         plt.figure(figsize=(size*3, ny_plots*size))
 
-        plt.rcParams.update({'font.size': size*2})
+        plt.rcParams.update({'font.size': (1+size)*2})
 
         plt.tight_layout(pad=0)
 
