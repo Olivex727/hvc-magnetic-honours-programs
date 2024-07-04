@@ -324,6 +324,11 @@ class KStest:
             print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
         return KSlist
     
+class uncertainty_subtraction:
+
+    def subtract():
+        return 0
+    
 class postprocess_analysis:
 
     def generate_suvival_graph():
