@@ -34,7 +34,10 @@ class hvc_looper:
     
     def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_average", save_file="../data_processed/results_pre"):
         master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
+        print("===HVC UNCERTAINTY SUBTRACTION===")
+        print("Subtracting uncertainties")
         fwhm_table, _, _ = uncertainty_subtraction.subtract(master_hvcs)
+        print("Constructing table")
         results = uncertainty_subtraction.uncertainty_readwrite(fwhm_table, filter_significant, load_file, save_file)
         return results
     
@@ -115,6 +118,20 @@ class hvc_looper:
             
         print("Process complete")
         return rms
+    
+    def manual_filter_HVCs(collated_data, hvc_indicies, save_file="../data_processed/proc_hvcs_filtered"):
+        hvcs = collated_data['HVCs'].copy()
+        rem_list = []
+
+        for i in list(range(len(hvcs))):
+            if not i in hvc_indicies: rem_list.append(i)
+
+        hvcs.remove_rows(rem_list)
+
+        if save_file:
+            ct.write_processed(hvcs, save_file)
+
+        return hvcs
     
     def save_HVC_RMs(collated_data, directory="../data_processed/hvc_rms/"):
         print("=== HVC RM SAVER ===")
@@ -381,12 +398,15 @@ class uncertainty_subtraction:
         ks = ct.read_processed(load_file)
         hks = hstack([ks, uncert_table])
 
-        if filter_significant:
-            hks = hks[hks["Significant"]]
-            hks = hks[~np.isnan(hks["Sigma [diff]"])]
+        if filter_significant: hks = uncertainty_subtraction.filter_significant(hks)
 
         if save_file: ct.write_processed(hks, save_file)
 
+        return hks
+    
+    def filter_significant(hks):
+        hks = hks[hks["Significant"]]
+        hks = hks[~np.isnan(hks["Sigma [diff]"])]
         return hks
     
 class postprocess_analysis:
