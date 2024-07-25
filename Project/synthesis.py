@@ -408,7 +408,96 @@ class uncertainty_subtraction:
         hks = hks[hks["Significant"]]
         hks = hks[~np.isnan(hks["Sigma [diff]"])]
         return hks
+
+class weighted_mean:
+    def weighted_average_individual(data, uncs):
+        weights = 1 / (uncs * 1e6)**2
+
+        return np.average(data, weights=weights), 1/np.sum(weights)
+
+    def weighted_average(inners, outers):
+        avg_in = []
+        unc_in = []
+        avg_ot = []
+        unc_ot = []
+        for i in range(len(inners)):
+            av, un = weighted_mean.weighted_average_individual(inners[i]["B_virtual [int]"], inners[i]["B_virtual_unc [int]"])
+            avg_in.append(av)
+            unc_in.append(un)
+            av, un = weighted_mean.weighted_average_individual(outers[i]["B_virtual [int]"], outers[i]["B_virtual_unc [int]"])
+            avg_ot.append(av)
+            unc_ot.append(un)
     
+        avg_diff = np.array(avg_in) - np.array(avg_ot)
+        unc_diff = np.sqrt(np.array(unc_in) ** 2 + np.array(unc_ot) ** 2)
+
+        t = Table()
+        t["Average [inner]"] = np.array(avg_in) * 1e6
+        t["Average [outer]"] = np.array(avg_ot) * 1e6
+        t["Average [diff]"] = avg_diff * 1e6
+        t["Avg Unc [inner]"] = np.array(unc_in)
+        t["Avg Unc [outer]"] = np.array(unc_ot)
+        t["Avg Unc [diff]"] = unc_diff
+
+        return t
+    
+class uncertainties:
+    def uncertainty_KS(master_hvcs):
+        master_rm_inner, master_rm_outer, inners, outers = uncertainty_subtraction.get_stacked_sets(master_hvcs)
+        inner_sigma = uncertainty_subtraction.uncertainty_table(inners)
+        outer_sigma = uncertainty_subtraction.uncertainty_table(outers)
+
+        #uncertainty_KS = np.sqrt(inner_sigma["Sigma [meas]"]**2 + inner_sigma["Sigma [obsv]"]**2 + outer_sigma["Sigma [meas]"]**2 + outer_sigma["Sigma [obsv]"]**2)
+        uncertainty_KS = np.sqrt(inner_sigma["Sigma [meas]"]**2 + outer_sigma["Sigma [meas]"]**2)
+
+        return uncertainty_KS
+    
+    def bootstrap_selection(sample):
+        sample = copy.deepcopy(sample)
+        sample.remove_column("ra_dec_obj")
+        rand = np.round((len(sample)-1) * np.random.rand(len(sample))).astype(int)
+        t = copy.deepcopy(sample)
+        t.remove_rows(list(range(len(sample))))
+
+        for index in rand:
+            t.add_row(list(sample[index]))
+    
+        return t
+
+    def bootstrap_sample_creation(sample, console_out=""):
+        samples = []
+        l = len(sample)
+        for i in range(len(sample)):
+            samples.append(uncertainties.bootstrap_selection(sample))
+            print(console_out+"Creating samples: "+str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
+        return samples
+
+    def bootstrap_evaluation(samples, callback):
+        sample_out = []
+        l = len(samples)
+
+        for i in range(len(samples)):
+            sout = "Evaluating samples: "+str(int((i+1)/l*100))+"% "
+            sample = samples[i]
+            bootstrapped = uncertainties.bootstrap_sample_creation(sample, sout+"")
+            response = list(map(callback, bootstrapped))
+            sample_out.append(response)
+            print(sout+"\r", sep="", end="", flush=True)
+
+        return np.array(sample_out)
+
+    def uncertainty_calculate(rms):
+        m_list = rms["B_virtual_unc [int]"].data * 1e6
+        o_list = rms["B_virtual [int]"].data * 1e6
+
+        meas = np.mean(m_list)
+        obsv = np.std(o_list)
+
+        return np.sqrt(obsv**2 - meas**2)
+    
+    def uncertainty_sigma(master_hvcs):
+        return 0
+
 class postprocess_analysis:
 
     def generate_suvival_graph():
