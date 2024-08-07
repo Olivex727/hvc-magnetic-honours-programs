@@ -169,7 +169,7 @@ class honours_plot:
             plt.show()
 
     # NB: Plots must come in multiples of 3
-    def plot_multiple_HVCs(snapshots, scale=1, size=6, show=True, add_circles=False):
+    def plot_multiple_HVCs(snapshots, scale=1, size=6, show=True, add_circles=False, average=False):
         ny_plots = int(len(snapshots) / 3)
 
         plt.figure(figsize=(size*3, ny_plots*size))
@@ -180,10 +180,16 @@ class honours_plot:
 
         for s in range(len(snapshots)):
             snapshot = snapshots[s]
+
+            if average:
+                interpolation = np.mean(snapshot["RMs"]["RM"])
+            else:
+                interpolation = snapshot["RMs"]["interpolation_raw"]
+            print(interpolation)
             rm_overlay = np.array([
                 snapshot["RMs"]["pixel location x"],
                 snapshot["RMs"]["pixel location y"],
-                snapshot["RMs"]["RM"] - snapshot["RMs"]["interpolation_raw"]
+                snapshot["RMs"]["RM"] - interpolation
                 ])
             plt.subplot(ny_plots, 3, s+1)
             plt.axis([0, snapshot['HI'].shape[0]-2, 0, snapshot['HI'].shape[1]-2])
@@ -195,7 +201,11 @@ class honours_plot:
             if add_circles:
                 xlim = plt.xlim()
                 ylim = plt.ylim()
-                circle = plt.Circle((sum(xlim)/2, sum(ylim)/2), sum(xlim)/4, color='black', fill=False)
+
+                maximum = max(snapshot["HVC"]["dx"], snapshot["HVC"]["dy"])
+                average = (snapshot["HVC"]["dx"]+snapshot["HVC"]["dy"])/2
+
+                circle = plt.Circle((sum(xlim)/2, sum(ylim)/2), (average/maximum)*sum(xlim)/4, color='black', fill=False)
                 plt.gca().add_patch(circle)
         
         if show:
@@ -275,21 +285,21 @@ class honours_plot:
         if show:
             plt.show()
 
-    def plot_cdfs(data1, cdf1, data2, cdf2, show=False):
+    def plot_cdfs(data1, cdf1, data2, cdf2, show=False, xlims=(-20,20)):
         plt.plot(data1, cdf1, label="Inner")
         plt.plot(data2, cdf2, label="Outer")
-        plt.xlabel(r"Virtual Magnetic Field [$\mu G$]")
+        plt.xlabel(r"Faraday Depth [$10^7 rad m^{-2}$]")
         plt.ylabel(r"Cumulative Proportion")
-        plt.xlim(-20, 20)
+        plt.xlim(xlims)
         plt.ylim(0,1)
         plt.legend()
         if show:
             plt.show()
 
-    def plot_cdf_lines(statx, statsgn, statv, y_inner, x_outer):
-        plt.axvline(x=statx, ymin=y_inner if statsgn < 0 else y_inner-statv, ymax=y_inner+statv if statsgn < 0 else y_inner, c="red", label="Statisitc")
+    def plot_cdf_lines(statx, statsgn, statv, y_inner, x_outer, limits):
+        plt.axvline(x=statx/limits[1], ymin=y_inner if statsgn < 0 else y_inner-statv, ymax=y_inner+statv if statsgn < 0 else y_inner, c="red", label="Statisitc")
 
-        plt.axhline(y=y_inner, xmin=(20+(x_outer if statsgn < 0 else statx))/40, xmax=(20+(statx if statsgn < 0 else x_outer))/40, c="black", label="Difference")
+        plt.axhline(y=y_inner, xmin=(limits[0]+(x_outer if statsgn < 0 else statx))/(2*limits[0]), xmax=(limits[0]+(statx if statsgn < 0 else x_outer))/(2*limits[0]), c="black", label="Difference")
 
         plt.legend()
 
@@ -303,7 +313,7 @@ class honours_plot:
             plt.boxplot(B_unc, vert=False, showmeans=True, widths=0.6, sym="x")
             plt.axvline(B_true_unc, c='r', linestyle='--')
             plt.yticks([])
-            plt.xlabel(r"Magnetic Field Uncertainties [$\mu G$]")
+            plt.xlabel(r"Faraday Depth [$10^7 rad m^{-2}$]")
         else:
             plt.boxplot(B_unc, vert=False, showmeans=True, widths=0.6, sym="x")
             plt.axvline(B_true_unc, c='r', linestyle='--')

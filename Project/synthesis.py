@@ -143,7 +143,7 @@ class hvc_looper:
             print(str(int((index+1)/l*100))+"% \r", sep="", end="", flush=True)
         print("Process complete")
 
-    def plot_HVC_selection(hvc_indicies, collated_data, hvc_override=[], rm_load=True, scale=1, size=6, plot_cross_source=False, add_circles=False):
+    def plot_HVC_selection(hvc_indicies, collated_data, hvc_override=[], rm_load=True, scale=1, size=6, plot_cross_source=False, add_circles=False, average=False):
         snapshots = []
         print("=== GENERATING MULTIPLE HVC PLOTS ===")
         print("Calculating HVC data")
@@ -165,7 +165,7 @@ class hvc_looper:
             print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
         
         print("Plotting HVC data")
-        if plot_cross_source: hplt.plot_multiple_HVCs(snapshots, scale=scale, size=size, add_circles=add_circles)
+        if plot_cross_source: hplt.plot_multiple_HVCs(snapshots, scale=scale, size=size, add_circles=add_circles, average=average)
         else: hplt.plot_multiple_HVCs_with_RM_sets(snapshots, scale=scale, size=size)
 
         print("Process complete")
@@ -220,7 +220,7 @@ class magnetic_field_derivation:
 class calculate:
 
     # Returns in gauss
-    def B_virt(H1, H1_err, rm, rm_unc, interp, interp_unc, intrinsic_unc=7, X=1):
+    def B_virt(H1, H1_err, rm, rm_unc=0, interp=0, interp_unc=0, intrinsic_unc=7, X=1):
         div = X * calculate.N_HI(H1, H1_err) * 1e6
         RMs = [
             3.8e18 * calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc)/div,
@@ -280,8 +280,8 @@ class KStest:
         if morph_type == "minimum":
             return min(hvc_snap["HVC"]["dx"], hvc_snap["HVC"]["dy"])
 
-    def make_cdfs(inner, outer):
-        xs = np.linspace(-20, 20, 1000)
+    def make_cdfs(inner, outer, limits):
+        xs = np.linspace(-limits, limits, 1000)
 
         inner_cdf = np.array(list(map(lambda x: KStest.edf(inner, x), xs)))
         outer_cdf = np.array(list(map(lambda x: KStest.edf(outer, x), xs)))
@@ -292,25 +292,24 @@ class KStest:
         masked = data[data<x]
         return len(masked)/len(data)
 
-    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True):
+    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True, limits=[5e7, 1e7]):
         hvc_snap = snapshots[index]
         inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap, morph_type=morph_type))
-        inner = KStest.column_to_array(inner_rms["B_virtual [int]"])
-        outer = KStest.column_to_array(outer_rms["B_virtual [int]"])
+        inner = KStest.column_to_array(inner_rms["RM"]-inner_rms["interpolation_raw"])
+        outer = KStest.column_to_array(outer_rms["RM"]-outer_rms["interpolation_raw"])
 
         print("Analysing HVC: " + hvc_snap["HVC"]["Name"])
 
-        inner_cdf, outer_cdf, xs = KStest.make_cdfs(inner, outer)
+        inner_cdf, outer_cdf, xs = KStest.make_cdfs(inner, outer, limits[0])
 
         if show:
-            hplt.plot_cdfs(xs, inner_cdf, xs, outer_cdf, show=False)
+            hplt.plot_cdfs(xs/limits[1], inner_cdf, xs/limits[1], outer_cdf, show=False, xlims=(-limits[0]/limits[1], limits[0]/limits[1]))
 
         ks_test = stats.ks_2samp(inner, outer)
 
         if find_diff:
             statx = ks_test.statistic_location
             statsgn = ks_test.statistic_sign
-            statv = ks_test.statistic_sign
 
             y_inner = KStest.edf(inner, statx)
 
@@ -325,7 +324,7 @@ class KStest:
             diff = statx - x_outer
 
             if show:
-                hplt.plot_cdf_lines(statx, statsgn, statv, y_inner, x_outer)
+                hplt.plot_cdf_lines(statx, statsgn, ks_test.statistic, y_inner, x_outer, limits)
 
             if dict_answer:
                 return {"Name":hvc_snap["HVC"]["Name"], "Statistic":ks_test.statistic, "p_value":ks_test.pvalue, "Statistic_x":ks_test.statistic_location, "Statistic_sgn":ks_test.statistic_sign, "Statistic_diff":diff, "Significant": ks_test.pvalue < p_value}
@@ -365,11 +364,12 @@ class uncertainty_subtraction:
 
         return master_rm_inner, master_rm_outer, inners, outers
     
+    # "B_virtual [int]", "B_virtual_unc [int]"
     def uncertainty_table(table_list):
         uncert = []
         for rms in table_list:
-            m_list = rms["B_virtual_unc [int]"].data * 1e6
-            o_list = rms["B_virtual [int]"].data * 1e6
+            m_list = (np.sqrt(rms["RM_uncert"]**2+rms["interpolation_unc"]**2)).data
+            o_list = (rms["RM"]-rms["interpolation_raw"]).data
 
             meas = np.mean(m_list)
             obsv = np.std(o_list)
@@ -421,10 +421,10 @@ class weighted_mean:
         avg_ot = []
         unc_ot = []
         for i in range(len(inners)):
-            av, un = weighted_mean.weighted_average_individual(inners[i]["B_virtual [int]"], inners[i]["B_virtual_unc [int]"])
+            av, un = weighted_mean.weighted_average_individual(inners[i]["RM"]-inners[i]["interpolation_raw"], np.sqrt(inners[i]["RM_uncert"]**2+inners[i]["interpolation_unc"]**2))
             avg_in.append(av)
             unc_in.append(un)
-            av, un = weighted_mean.weighted_average_individual(outers[i]["B_virtual [int]"], outers[i]["B_virtual_unc [int]"])
+            av, un = weighted_mean.weighted_average_individual(outers[i]["RM"]-outers[i]["interpolation_raw"], np.sqrt(outers[i]["RM_uncert"]**2+outers[i]["interpolation_unc"]**2))
             avg_ot.append(av)
             unc_ot.append(un)
     
@@ -487,8 +487,8 @@ class uncertainties:
         return np.array(sample_out)
 
     def uncertainty_calculate(rms):
-        m_list = rms["B_virtual_unc [int]"].data * 1e6
-        o_list = rms["B_virtual [int]"].data * 1e6
+        m_list = (np.sqrt(rms["RM_uncert"]**2+rms["interpolation_unc"]**2)).data
+        o_list = (rms["RM"]-rms["interpolation_raw"]).data
 
         meas = np.mean(m_list)
         obsv = np.std(o_list)
