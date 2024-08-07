@@ -32,7 +32,7 @@ class hvc_looper:
     def add_magnetic_field_HVCs(collated_data, hvc_indicies=[], save_directory="../data_processed/", rm_load=True):
         return 0
     
-    def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_average", save_file="../data_processed/results_pre"):
+    def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_RM_average", save_file="../data_processed/results_pre_RM"):
         master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
         print("===HVC UNCERTAINTY SUBTRACTION===")
         print("Subtracting uncertainties")
@@ -219,9 +219,9 @@ class magnetic_field_derivation:
 
 class calculate:
 
-    # Returns in gauss
+    # Returns in microgauss
     def B_virt(H1, H1_err, rm, rm_unc=0, interp=0, interp_unc=0, intrinsic_unc=7, X=1):
-        div = X * calculate.N_HI(H1, H1_err) * 1e6
+        div = X * calculate.N_HI(H1, H1_err)
         RMs = [
             3.8e18 * calculate.RM(rm, rm_unc, intrinsic_unc=intrinsic_unc)/div,
             3.8e18 * calculate.RM(rm, rm_unc, interp, interp_unc, intrinsic_unc=intrinsic_unc)/div
@@ -261,7 +261,7 @@ class calculate:
 class KStest:
 
     def column_to_array(data):
-        return data.data*1e6
+        return data.data
 
     def split_RMs(RMs, centre, max_distance):
         mask = np.zeros(len(RMs), dtype=bool)
@@ -292,7 +292,7 @@ class KStest:
         masked = data[data<x]
         return len(masked)/len(data)
 
-    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True, limits=[5e7, 1e7]):
+    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True, limits=[50, 10]):
         hvc_snap = snapshots[index]
         inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap, morph_type=morph_type))
         inner = KStest.column_to_array(inner_rms["RM"]-inner_rms["interpolation_raw"])
@@ -411,7 +411,7 @@ class uncertainty_subtraction:
 
 class weighted_mean:
     def weighted_average_individual(data, uncs):
-        weights = 1 / (uncs * 1e6)**2
+        weights = 1 / (uncs)**2
 
         return np.average(data, weights=weights), 1/np.sum(weights)
 
@@ -432,9 +432,9 @@ class weighted_mean:
         unc_diff = np.sqrt(np.array(unc_in) ** 2 + np.array(unc_ot) ** 2)
 
         t = Table()
-        t["Average [inner]"] = np.array(avg_in) * 1e6
-        t["Average [outer]"] = np.array(avg_ot) * 1e6
-        t["Average [diff]"] = avg_diff * 1e6
+        t["Average [inner]"] = np.array(avg_in)
+        t["Average [outer]"] = np.array(avg_ot)
+        t["Average [diff]"] = avg_diff
         t["Avg Unc [inner]"] = np.array(unc_in)
         t["Avg Unc [outer]"] = np.array(unc_ot)
         t["Avg Unc [diff]"] = unc_diff

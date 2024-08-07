@@ -288,7 +288,7 @@ class honours_plot:
     def plot_cdfs(data1, cdf1, data2, cdf2, show=False, xlims=(-20,20)):
         plt.plot(data1, cdf1, label="Inner")
         plt.plot(data2, cdf2, label="Outer")
-        plt.xlabel(r"Faraday Depth [$10^7 rad m^{-2}$]")
+        plt.xlabel(r"Faraday Depth [$rad m^{-2}$]")
         plt.ylabel(r"Cumulative Proportion")
         plt.xlim(xlims)
         plt.ylim(0,1)
