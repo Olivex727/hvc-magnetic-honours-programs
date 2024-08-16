@@ -149,11 +149,13 @@ print("Part 2 Complete")
 # === PART 3 - SAVE ALL MODELS === #
 
 from astropy.table import Table
-import sys
-sys.path.append('../standard_modules')
-sys.path.append('../project')
+from astropy.io import ascii
 
-from collation import collation_tools as ct
+def write_processed(table, file):
+    table.write(file+".ecsv", format='ascii.ecsv', overwrite=True)
+
+def read_processed(file):
+    return ascii.read(file+".ecsv")
 
 # Create background variants
 profiles = [100, 100, 128, 128, 150, 150]
@@ -165,8 +167,8 @@ for p in range(len(profiles)):
     inner = t[((x-4)**2+(y-4)**2)<4]
     outer = t[((x-4)**2+(y-4)**2)>4]
     print(len(inner),len(outer))
-    ct.write_processed(outer, "../data_processed/toy_model/background_models/outer_"+str(p+1))
-    ct.write_processed(inner, "../data_processed/toy_model/background_models/inner_"+str(p+1))
+    write_processed(outer, "../data_processed/toy_model/background_models/outer_"+str(p+1))
+    write_processed(inner, "../data_processed/toy_model/background_models/inner_"+str(p+1))
     profs.append(inner)
 
 import copy
@@ -195,12 +197,12 @@ for a in alpha:
                     bigP = P_int(inner_prof[i]["x"], inner_prof[i]["y"], a, b, c)
                     inner_prof[i]["RM"] = inner_prof[i]["RM"] + bigP
                     inner_prof[i]["RM_uncert"] = np.sqrt(np.abs(inner_prof[i]["RM"]) + np.abs(bigP))
-                ct.write_processed(inner_prof, "../data_processed/toy_model/toy_hvcs/toy_"+str(p)+"_"+str(a)+"_"+str(b)+"_"+str(c))
+                write_processed(inner_prof, "../data_processed/toy_model/toy_hvcs/toy_"+str(p)+"_"+str(a)+"_"+str(b)+"_"+str(c))
                 del inner_prof
                 nc = nc + 1
                 print("Creating models: "+str(int(100*nc/long))+"% (Model#"+str(nc)+"/"+str(long)+") \r", sep="", end="", flush=True)
 
-ct.write_processed(master_list, "../data_processed/toy_model/master_model")
+write_processed(master_list, "../data_processed/toy_model/master_model")
 
 print("Part 3 Completed")
 print("Termination")
