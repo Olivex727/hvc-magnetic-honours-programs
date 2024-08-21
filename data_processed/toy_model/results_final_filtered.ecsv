@@ -1,0 +1,24 @@
+# %ECSV 1.0
+# ---
+# datatype:
+# - {name: Name, datatype: string}
+# - {name: Statistic, datatype: float64}
+# - {name: p_value, datatype: float64}
+# - {name: Statistic_x, datatype: float64}
+# - {name: Statistic_sgn, datatype: int32}
+# - {name: Statistic_diff, datatype: float64}
+# - {name: Significant, datatype: bool}
+# - {name: 'Sigma [meas]', datatype: float64}
+# - {name: 'Sigma [obsv]', datatype: float64}
+# - {name: 'Sigma [true]', datatype: float64}
+# - {name: 'Sigma [diff]', datatype: float64}
+# - {name: FWHM, datatype: float64}
+# - {name: 'Average [inner]', datatype: float64}
+# - {name: 'Average [outer]', datatype: float64}
+# - {name: 'Average [diff]', datatype: float64}
+# - {name: 'Avg Unc [inner]', datatype: float64}
+# - {name: 'Avg Unc [outer]', datatype: float64}
+# - {name: 'Avg Unc [diff]', datatype: float64}
+# - {name: KS unc, datatype: float64}
+# schema: astropy-2.0
+Name Statistic p_value Statistic_x Statistic_sgn Statistic_diff Significant "Sigma [meas]" "Sigma [obsv]" "Sigma [true]" "Sigma [diff]" FWHM "Average [inner]" "Average [outer]" "Average [diff]" "Avg Unc [inner]" "Avg Unc [outer]" "Avg Unc [diff]" "KS unc"

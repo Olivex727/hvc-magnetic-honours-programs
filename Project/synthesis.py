@@ -13,6 +13,7 @@ from uncertainties import umath
 
 from astropy import units as u
 from astropy.units import astrophys as astru
+from astropy.table import hstack
 
 import numpy as np
 import scipy.stats as stats
@@ -32,6 +33,20 @@ class hvc_looper:
 
     def add_magnetic_field_HVCs(collated_data, hvc_indicies=[], save_directory="../data_processed/", rm_load=True):
         return 0
+    
+    def weighted_average_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", load_file="../data_processed/results_pre_RM", save_file="../data_processed/results_weighted_RM", toy_override=False):
+        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory, toy_override=toy_override)
+        print("===HVC WEIGHTED MEAN===")
+        print("Getting stacked sets")
+        _, _, inners, outers = uncertainty_subtraction.get_stacked_sets(master_hvcs, toy_override=toy_override)
+        print("Calculating weighted average")
+        wavgs = weighted_mean.weighted_average(inners, outers)
+        print("Constructing table")
+        results = ct.read_processed(load_file)
+        bigger_results = hstack([results, wavgs])
+        if save_file:
+            ct.write_processed(bigger_results, save_file)
+        return bigger_results
     
     def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_RM_average", save_file="../data_processed/results_pre_RM", toy_override=False):
         master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory, toy_override=toy_override)
@@ -441,14 +456,14 @@ class uncertainty_subtraction:
 
         return hks
     
-    def filter_significant(hks):
+    def filter_significant(hks, sigma_filter=True):
         hks = hks[hks["Significant"]]
-        hks = hks[~np.isnan(hks["Sigma [diff]"])]
+        if sigma_filter: hks = hks[~np.isnan(hks["Sigma [diff]"])]
         return hks
 
 class weighted_mean:
     def weighted_average_individual(data, uncs):
-        weights = 1 / (uncs)**2
+        weights = np.nan_to_num(1 / (uncs)**2, nan=0, neginf=0, posinf=0)
 
         return np.average(data, weights=weights), 1/np.sum(weights)
 
