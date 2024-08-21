@@ -33,18 +33,18 @@ class hvc_looper:
     def add_magnetic_field_HVCs(collated_data, hvc_indicies=[], save_directory="../data_processed/", rm_load=True):
         return 0
     
-    def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_RM_average", save_file="../data_processed/results_pre_RM"):
-        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
+    def uncertainty_subtract_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", filter_significant=False, load_file="../data_processed/hvc_KS_tests/hvc_KS_RM_average", save_file="../data_processed/results_pre_RM", toy_override=False):
+        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory, toy_override=toy_override)
         print("===HVC UNCERTAINTY SUBTRACTION===")
         print("Subtracting uncertainties")
-        fwhm_table, _, _ = uncertainty_subtraction.subtract(master_hvcs)
+        fwhm_table, _, _ = uncertainty_subtraction.subtract(master_hvcs, toy_override=toy_override)
         print("Constructing table")
         results = uncertainty_subtraction.uncertainty_readwrite(fwhm_table, filter_significant, load_file, save_file)
         return results
     
     def KStest_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", save_file="../data_processed/hvc_KS_tests/hvc_KS", p_value=0.05, morph_type="average", toy_override=False):
         master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory, toy_override=toy_override)
-        results = KStest.KStest_HVCs(master_hvcs, p_value=p_value, morph_type="average")
+        results = KStest.KStest_HVCs(master_hvcs, p_value=p_value, morph_type="average", toy_override=toy_override)
         print("Converting")
         table_stat = Table(rows=results)
         if save_file:
@@ -85,10 +85,14 @@ class hvc_looper:
 
         if toy_override:
             rms = []
+            l = len(os.listdir(directory))
+            i = 0
             for file in os.listdir(directory):
                 f = os.path.join(directory, file)[:-5]
                 rms.append(ct.read_processed(f))
-                print(f)
+                #print(f)
+                i = i + 1
+                print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
             print("Process complete")
             return rms
 
@@ -114,10 +118,14 @@ class hvc_looper:
 
         if toy_override:
             rms = []
+            l = len(os.listdir(directory))
+            i = 0
             for file in os.listdir(directory):
                 f = os.path.join(directory, file)[:-5]
                 rms.append({"RMs":ct.read_processed(f), "HVC":{"Name":file}})
-                print(f)
+                #print(f)
+                i = i + 1
+                print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
             print("Process complete")
             return rms
 
@@ -293,7 +301,7 @@ class KStest:
         return RMs_inner, RMs_outer
     
     def get_toy_background(RMs, hvc):
-        background = hvc[4]
+        background = str(int(hvc[4])+1)
         outer = ct.read_processed("../data_processed/toy_model/background_models/outer_"+background)
         return RMs, outer
 
@@ -373,15 +381,18 @@ class KStest:
     
 class uncertainty_subtraction:
 
-    def subtract(snapshots):
-        master_rm_inner, master_rm_outer, inners, outers = uncertainty_subtraction.get_stacked_sets(snapshots)
+    def subtract(snapshots, toy_override=False):
+        master_rm_inner, master_rm_outer, inners, outers = uncertainty_subtraction.get_stacked_sets(snapshots, toy_override=toy_override)
         return uncertainty_subtraction.uncertainty_subtract(inners, outers)
     
-    def get_stacked_sets(snapshots):
+    def get_stacked_sets(snapshots, toy_override=False):
         inners = []
         outers = []
         for hvc_snap in snapshots:
-            inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap))
+            if toy_override:
+                inner_rms, outer_rms = KStest.get_toy_background(hvc_snap["RMs"],hvc_snap["HVC"]["Name"])
+            else:
+                inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap))
             inners.append(inner_rms)
             outers.append(outer_rms)
 
