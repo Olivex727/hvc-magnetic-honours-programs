@@ -20,6 +20,7 @@ from astropy.table import Table, vstack, hstack
 
 import copy
 
+import os
 import contextlib
 
 def hvc_rms(i): return "../data_processed/hvc_rms/hvc_rms_index_"+str(i)
@@ -41,8 +42,8 @@ class hvc_looper:
         results = uncertainty_subtraction.uncertainty_readwrite(fwhm_table, filter_significant, load_file, save_file)
         return results
     
-    def KStest_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", save_file="../data_processed/hvc_KS_tests/hvc_KS", p_value=0.05, morph_type="average"):
-        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory)
+    def KStest_HVCs(collated_data, hvc_indicies=[], load_directory="../data_processed/hvc_rms/", save_file="../data_processed/hvc_KS_tests/hvc_KS", p_value=0.05, morph_type="average", toy_override=False):
+        master_hvcs = hvc_looper.load_HVCs(collated_data, hvc_indicies, load_directory, toy_override=toy_override)
         results = KStest.KStest_HVCs(master_hvcs, p_value=p_value, morph_type="average")
         print("Converting")
         table_stat = Table(rows=results)
@@ -51,7 +52,6 @@ class hvc_looper:
             ct.write_processed(table_stat, save_file+"_"+morph_type)
         print("Process Complete")
         return table_stat
-
 
     def add_magnetic_field_RMs(collated_data, hvc_indicies=[], save_directory="../data_processed/hvc_rms/", rm_load=True):
         rmbs = []
@@ -79,9 +79,18 @@ class hvc_looper:
         print("Process complete")
         return rmbs
     
-    def load_HVC_RMs(collated_data, hvc_indicies=[], directory="../data_processed/hvc_rms/", has_B=True):
+    def load_HVC_RMs(collated_data, hvc_indicies=[], directory="../data_processed/hvc_rms/", has_B=True, toy_override=False):
         print("=== HVC RM LOADER ===")
         print("Taking HVC snapshots")
+
+        if toy_override:
+            rms = []
+            for file in os.listdir(directory):
+                f = os.path.join(directory, file)[:-5]
+                rms.append(ct.read_processed(f))
+                print(f)
+            print("Process complete")
+            return rms
 
         rms = []
 
@@ -99,9 +108,18 @@ class hvc_looper:
         print("Process complete")
         return rms
     
-    def load_HVCs(collated_data, hvc_indicies=[], directory="../data_processed/hvc_rms/", has_B=True):
+    def load_HVCs(collated_data, hvc_indicies=[], directory="../data_processed/hvc_rms/", has_B=True, toy_override=False):
         print("=== HVC RM LOADER ===")
         print("Taking HVC snapshots")
+
+        if toy_override:
+            rms = []
+            for file in os.listdir(directory):
+                f = os.path.join(directory, file)[:-5]
+                rms.append({"RMs":ct.read_processed(f), "HVC":{"Name":file}})
+                print(f)
+            print("Process complete")
+            return rms
 
         rms = []
 
@@ -273,6 +291,11 @@ class KStest:
         RMs_outer = RMs[mask]
 
         return RMs_inner, RMs_outer
+    
+    def get_toy_background(RMs, hvc):
+        background = hvc[4]
+        outer = ct.read_processed("../data_processed/toy_model/background_models/outer_"+background)
+        return RMs, outer
 
     def morph_ring(hvc_snap, morph_type="average"):
         if morph_type == "average":
@@ -292,9 +315,12 @@ class KStest:
         masked = data[data<x]
         return len(masked)/len(data)
 
-    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True, limits=[50, 10]):
+    def KStest_single(snapshots, index = 0, show = False, dict_answer=True, p_value=0.05, morph_type="average", find_diff=True, limits=[50, 10], toy_override=False):
         hvc_snap = snapshots[index]
-        inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap, morph_type=morph_type))
+        if toy_override:
+            inner_rms, outer_rms = KStest.get_toy_background(hvc_snap["RMs"],hvc_snap["HVC"]["Name"])
+        else:
+            inner_rms, outer_rms = KStest.split_RMs(hvc_snap["RMs"],hvc_snap["HVC"]["SkyCoord"], KStest.morph_ring(hvc_snap, morph_type=morph_type))
         inner = KStest.column_to_array(inner_rms["RM"]-inner_rms["interpolation_raw"])
         outer = KStest.column_to_array(outer_rms["RM"]-outer_rms["interpolation_raw"])
 
@@ -334,14 +360,14 @@ class KStest:
         else:
             return {"Name":hvc_snap["HVC"]["Name"], "Statistic":ks_test.statistic, "p_value":ks_test.pvalue, "Statistic_x":ks_test.statistic_location, "Statistic_sgn":ks_test.statistic_sign, "Significant": ks_test.pvalue < p_value}
         
-    def KStest_HVCs(snapshots, show=False, dict_answer=True, p_value=0.05, morph_type="average"):
+    def KStest_HVCs(snapshots, show=False, dict_answer=True, p_value=0.05, morph_type="average", toy_override=False):
         print("=== HVC KS TESTING ===")
         KSlist = []
         l = len(snapshots)
         print("Performing KS Tests")
         for i in range(len(snapshots)):
             with contextlib.redirect_stdout(None):
-                KSlist.append(KStest.KStest_single(snapshots, index=i, show=show, dict_answer=dict_answer, p_value=p_value, morph_type=morph_type))
+                KSlist.append(KStest.KStest_single(snapshots, index=i, show=show, dict_answer=dict_answer, p_value=p_value, morph_type=morph_type, toy_override=toy_override))
             print(str(int((i+1)/l*100))+"% \r", sep="", end="", flush=True)
         return KSlist
     
