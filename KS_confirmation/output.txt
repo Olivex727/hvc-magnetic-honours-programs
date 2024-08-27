@@ -1,0 +1,38 @@
+C:\Users\olive\anaconda3\Lib\site-packages\statsmodels\regression\linear_model.py:905: ValueWarning: Weights are not supported in OLS and will be ignoredAn exception will be raised in the next version.
+  warnings.warn(msg, ValueWarning)
+C:\Users\olive\anaconda3\Lib\site-packages\statsmodels\base\model.py:127: ValueWarning: unknown kwargs ['weights']
+  warnings.warn(msg, ValueWarning)
+                            OLS Regression Results
+==============================================================================
+Dep. Variable:               Estimate   R-squared:                       0.757
+Model:                            OLS   Adj. R-squared:                  0.751
+Method:                 Least Squares   F-statistic:                     135.5
+Date:                Mon, 26 Aug 2024   Prob (F-statistic):           1.89e-27
+Time:                        18:49:13   Log-Likelihood:                -211.25
+No. Observations:                  90   AIC:                             428.5
+Df Residuals:                      87   BIC:                             436.0
+Df Model:                           2
+Covariance Type:            nonrobust
+===========================================================================================
+                              coef    std err          t      P>|t|      [0.025      0.975]
+-------------------------------------------------------------------------------------------
+Intercept                   3.4510      0.470      7.345      0.000       2.517       4.385
+C(Variable)[T.Var_Sub]     -1.1990      0.664     -1.805      0.075      -2.520       0.122
+C(Variable)[T.Wgt_Mean]    -1.6750      0.664     -2.521      0.014      -2.996      -0.354
+==============================================================================
+Omnibus:                       39.654   Durbin-Watson:                   0.385
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               79.185
+Skew:                           1.744   Prob(JB):                     6.39e-18
+Kurtosis:                       5.991   Cond. No.                         3.73
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+  Multiple Comparison of Means - Tukey HSD, FWER=0.05  
+=======================================================
+ group1  group2  meandiff p-adj   lower   upper  reject
+-------------------------------------------------------
+ KS_EDF  Var_Sub   -1.199 0.1741 -2.7833  0.3853  False
+ KS_EDF Wgt_Mean   -1.675 0.0357 -3.2593 -0.0907   True
+Var_Sub Wgt_Mean   -0.476 0.7545 -2.0603  1.1083  False
+-------------------------------------------------------
