@@ -46,7 +46,7 @@ ax.set_facecolor('white')
 
 # === BOOTSTRAP & T-DISTRIBUTION === #
 
-num_samples = 10
+num_samples = 1000
 
 def bootstrap_fit(data, num_bootstrap_samples):
     params_bootstrap = np.zeros((num_bootstrap_samples, 3))

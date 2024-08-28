@@ -1,0 +1,19 @@
+> summary(base_V2_aov)
+                    Df Sum Sq Mean Sq F value Pr(>F)  
+data_new$variable.x  2   44.7  22.349   3.375 0.0388 *
+Residuals           87  576.1   6.622                 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> tukey.test
+  Tukey multiple comparisons of means
+    95% family-wise confidence level
+
+Fit: aov(formula = data_new$Estimate ~ data_new$variable.x, weights = data_new$prescision)
+
+$`data_new$variable.x`
+                   diff       lwr         upr     p adj
+Var_Sub-KS_EDF   -1.199 -2.783335  0.38533482 0.1741072
+Wgt_Mean-KS_EDF  -1.675 -3.259335 -0.09066518 0.0357301
+Wgt_Mean-Var_Sub -0.476 -2.060335  1.10833482 0.7544765
+
+> 
