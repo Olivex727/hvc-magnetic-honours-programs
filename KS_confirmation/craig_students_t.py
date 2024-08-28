@@ -149,7 +149,7 @@ from scipy.stats import chi2
 def cs2(n, y, ddof=3):
     stat = np.sum((n-y)**2 / y)
     pv = chi2.cdf(stat, len(n)-ddof)
-    return [stat, pv]
+    return [stat, 1-pv]
 
 thist1 = t_dist_values(n, bins, params_mean1)
 chi1 = cs2(n, thist1, ddof=2)
