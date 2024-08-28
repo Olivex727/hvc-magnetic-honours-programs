@@ -25,7 +25,7 @@ rm_column2 = get_RMs("../data_processed/proc_rms.ecsv", "interpolation_cor")
 # === MATPLOTLIB SETUP === #
 
 # Set figure size suitable for single column in a two-column paper
-plt.figure(figsize=(10, 10))
+plt.figure(figsize=(8.5, 7))
 ax = plt.gca()
 
 # Make spines less prominent
@@ -82,8 +82,8 @@ params_mean2, params_std2 = bootstrap_to_t(rm_column2, "Crosshatch-Bandpassed Re
 
 # Create a histogram
 bins = np.linspace(-100, 100, 100)
-n, bins, patches = plt.hist(rm_column, bins=bins, density=True, alpha=0.5, edgecolor='none', color='#e19f7c', label="Raw Interpolation Residuals")
-n2, bins2, patches2 = plt.hist(rm_column2, bins=bins, density=True, alpha=0.5, edgecolor='none', color='#7cbee1', label="Crosshatch-Bandpassed Residuals")
+n, bins, patches = plt.hist(rm_column, bins=bins, density=True, alpha=0.5, edgecolor='none', color='#7cbee1', label="Raw Interpolation Residuals")
+n2, bins2, patches2 = plt.hist(rm_column2, bins=bins, density=True, alpha=0.5, edgecolor='none', color='#e19f7c', label="Crosshatch-Bandpassed Residuals")
 
 # Adding x and y axis labels
 plt.xlabel(r'RM Residuals [rad m$^{-2}$]')
@@ -118,7 +118,7 @@ def make_txt(params_mean, params_std, label):
     
 
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-textstr = make_txt(params_mean1, params_std1, "Raw Interpolation Residuals t-dist") + "\n\n" + make_txt(params_mean1, params_std1, "Crosshatch-Bandpassed Residuals t-dist")
+textstr = make_txt(params_mean1, params_std1, "Raw Interpolation Residuals t-dist") + "\n\n" + make_txt(params_mean2, params_std2, "Crosshatch-Bandpassed Residuals t-dist")
 print(textstr)
 #ax.text(0.48, 1.05, textstr, transform=ax.transAxes, fontsize=7, verticalalignment='bottom', bbox=props)
 
@@ -134,28 +134,40 @@ plt.savefig("./output.png", pad_inches=0.0)
 def t_dist_values(hist, bins, params):
     df, loc, scale = params
     distarr = []
-    for i in range(list(len(hist))):
+    for i in range(len(hist)):
         distarr.append(student_t.pdf((bins[i+1]+bins[i])/2, df, loc=loc, scale=scale))
-    return distarr
+    return np.array(distarr)
 
 from scipy.stats import chisquare as chisq
 
+def cs(n, y, ddof=2):
+    csq = chisq(n, np.sum(n)/np.sum(y) * y, ddof=ddof)
+    return [csq[0], 1 - csq[1]]
+
+from scipy.stats import chi2
+
+def cs2(n, y, ddof=3):
+    stat = np.sum((n-y)**2 / y)
+    pv = chi2.cdf(stat, len(n)-ddof)
+    return [stat, pv]
+
 thist1 = t_dist_values(n, bins, params_mean1)
-chi1 = chisq(n, thist1, ddof=2)
+chi1 = cs2(n, thist1, ddof=2)
 
 thist2 = t_dist_values(n2, bins2, params_mean2)
-chi2 = chisq(n2, thist2, ddof=2)
+chi2 = cs2(n2, thist2, ddof=2)
 
 def make_txt_chisq(chisq, label):
     textstr = '\n'.join((
         str(label.upper()),
         "----------------------",
         #| Statistic | 0.0000 |
-        '| Statistic | %.4f |' % (chisq[0]),
-        '| p-value   | %.4f |' % (chisq[1]),
+        '| Statistic | %.4g |' % (chisq[0]),
+        '| p-value   | %.4g |' % (chisq[1]),
         "----------------------"
     ))
     return textstr
 
-textstr = make_txt(params_mean1, params_std1, "Raw Interpolation Residuals Chi-Squared") + "\n\n" + make_txt(params_mean1, params_std1, "Crosshatch-Bandpassed Residuals Chi-Squared")
+textstr = make_txt_chisq(chi1, "Raw Interpolation Residuals Chi-Squared") + "\n\n" + make_txt_chisq(chi2, "Crosshatch-Bandpassed Residuals Chi-Squared")
+print()
 print(textstr)
