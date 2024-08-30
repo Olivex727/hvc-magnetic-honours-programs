@@ -1,0 +1,4 @@
+test1,test2,diff,lwr,upr,p_adj
+Var. Sub.,KS-EDF,-1.199,-2.783,0.3853,0.1741
+Wgt. Mean,KS-EDF,-1.675,-3.259,-0.09067,0.03573
+Wgt. Mean,Var. Sub.,-0.476,-2.060,1.108,0.7545
