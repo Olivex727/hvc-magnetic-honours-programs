@@ -4,6 +4,7 @@ from astropy.io import fits
 from scipy import fft
 import numpy as np
 from dict2obj import Dict2Obj
+import copy
 
 class interpolate:
     def interpolate(RMs=0, use_H_alpha=True, H_alpha=0, calculate_interpolation=True):
@@ -21,7 +22,7 @@ class interpolate:
     
     def fourier_interpolate(interpolation, k_space, hvc_area_range, crosshatch=True, scale=0):
         filtered_k_space = foreground_remover.filter_k_space(k_space, hvc_area_range, crosshatch=crosshatch, scale=scale)
-        return foreground_remover.restore_foreground(filtered_k_space, interpolation)
+        return foreground_remover.restore_foreground(filtered_k_space, interpolation, crosshatch)
 
 # Return set of corrected RM points
 class foreground_remover:
@@ -33,6 +34,23 @@ class foreground_remover:
         fx = fft.fftfreq(k_space.shape[1])
         return fx, fy
     
+    def swap_space(b):
+        y = len(b)
+        x = len(b[0])
+        nd = copy.deepcopy(b)
+
+        for i in range(y):
+            for j in range(x):
+                nd[i][j] = b[int((i + int(y)/2) % y)][j]
+    
+        nd2 = copy.deepcopy(nd)
+
+        for i in range(y):
+            for j in range(x):
+                nd2[i][j] = nd[i][int((j + int(x)/2) % x)]
+
+        return nd2
+    
     def punch_annulus(base, inner_radius, outer_radius, centre=False):
         if not centre:
             centre = (len(base[0])/2, len(base)/2)
@@ -40,13 +58,13 @@ class foreground_remover:
         for y in range(len(base)):
             for x in range(len(base[y])):
                 if inner_radius ** 2 < ((x-centre[0]) ** 2 + (y-centre[1]) ** 2) < outer_radius ** 2:
-                    base[y][x] = 0
+                    base[y][x] = 1
     
         return base
     
     def punch_annulus_kernel(base, inner_radius, outer_radius, centre=False):
-        base = base - 1
-        base = foreground_remover.punch_annulus(base, inner_radius, outer_radius, centre) + 1
+        base = base
+        base = foreground_remover.punch_annulus(base, inner_radius, outer_radius, centre)
         base = base / np.sum(base)
         return base
     
@@ -99,8 +117,10 @@ class foreground_remover:
         return fft.ifft2(k_space)
     
     # Assumes a pre-filtered k-space
-    def restore_foreground(k_space, interpolation):
-        corr_fg = Dict2Obj({"header":interpolation.header, "data":foreground_remover.get_corrected_image(k_space).real})
+    def restore_foreground(k_space, interpolation, crosshatch=True):
+        prelim = foreground_remover.get_corrected_image(k_space).real
+        if not crosshatch: prelim = foreground_remover.swap_space(prelim)
+        corr_fg = Dict2Obj({"header":interpolation.header, "data":prelim})
         return corr_fg
     
 class interpolation_comparison:
