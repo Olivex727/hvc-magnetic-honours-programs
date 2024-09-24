@@ -1,0 +1,26 @@
+RAW INTERPOLATION RESIDUALS T-DIST
+|--------------------------------------|
+| Parameter          | Mean   | Stdev  |
+|--------------------------------------|
+| Degrees of Freedom | 1.0397 | 0.0040 |
+| Centerpoint        | 1.4688 | 0.1575 |
+| Internal Scale     | 14.240 | 0.0602 |
+|--------------------------------------|
+
+CROSSHATCH-BANDPASSED RESIDUALS T-DIST
+|--------------------------------------|
+| Parameter          | Mean   | Stdev  |
+|--------------------------------------|
+| Degrees of Freedom | 1.0463 | 0.0039 |
+| Centerpoint        | 1.6449 | 0.0462 |
+| Internal Scale     | 14.463 | 0.0607 |
+|--------------------------------------|
+
+ANNULUS-BANDPASSED RESIDUALS T-DIST
+|--------------------------------------|
+| Parameter          | Mean   | Stdev  |
+|--------------------------------------|
+| Degrees of Freedom | 1.0541 | 0.0038 |
+| Centerpoint        | 1.6233 | 0.1548 |
+| Internal Scale     | 14.666 | 0.0620 |
+|--------------------------------------|
