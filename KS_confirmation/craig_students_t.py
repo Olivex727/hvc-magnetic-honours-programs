@@ -17,6 +17,7 @@ def get_RMs(file, param):
 
 rm_column = get_RMs("../data_processed/proc_rms.ecsv", "interpolation_raw")
 rm_column2 = get_RMs("../data_processed/proc_rms.ecsv", "interpolation_cor")
+rm_column3 = get_RMs("../data_processed/proc_rms_annulus.ecsv", "interpolation_cor")
 
 # Set style using seaborn
 #sns.set_style("whitegrid")
@@ -77,13 +78,15 @@ def bootstrap_to_t(column, name, show=True):
 
 params_mean1, params_std1 = bootstrap_to_t(rm_column, "Raw Interpolation Residuals t-dist")
 params_mean2, params_std2 = bootstrap_to_t(rm_column2, "Crosshatch-Bandpassed Residuals t-dist")
+params_mean3, params_std3 = bootstrap_to_t(rm_column3, "Annulus-Bandpassed Residuals t-dist")
 
 # === HISTOGRAM CREATION === #
 
 # Create a histogram
 bins = np.linspace(-100, 100, 100)
-n, bins, patches = plt.hist(rm_column, bins=bins, density=True, alpha=0.5, edgecolor='none', color='#7cbee1', label="Raw Interpolation Residuals")
-n2, bins2, patches2 = plt.hist(rm_column2, bins=bins, density=True, alpha=0.5, edgecolor='none', color='#e19f7c', label="Crosshatch-Bandpassed Residuals")
+n, bins, patches = plt.hist(rm_column, bins=bins, density=True, edgecolor='none', color=[0.8, 0.1, 0.1, 0.4], label="Raw Interpolation Residuals")
+n2, bins2, patches2 = plt.hist(rm_column2, bins=bins, density=True, edgecolor='none', color=[0.1, 0.8, 0.1, 0.4], label="Crosshatch-Bandpassed Residuals")
+n3, bins3, patches3 = plt.hist(rm_column2, bins=bins, density=True, edgecolor='none', color=[0.1, 0.1, 0.8, 0.4], label="Annulus-Bandpassed Residuals")
 
 # Adding x and y axis labels
 plt.xlabel(r'RM Residuals [rad m$^{-2}$]')
@@ -118,7 +121,7 @@ def make_txt(params_mean, params_std, label):
     
 
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-textstr = make_txt(params_mean1, params_std1, "Raw Interpolation Residuals t-dist") + "\n\n" + make_txt(params_mean2, params_std2, "Crosshatch-Bandpassed Residuals t-dist")
+textstr = make_txt(params_mean1, params_std1, "Raw Interpolation Residuals t-dist") + "\n\n" + make_txt(params_mean2, params_std2, "Crosshatch-Bandpassed Residuals t-dist") + "\n\n" + make_txt(params_mean3, params_std3, "Annulus-Bandpassed Residuals t-dist")
 print(textstr)
 #ax.text(0.48, 1.05, textstr, transform=ax.transAxes, fontsize=7, verticalalignment='bottom', bbox=props)
 
@@ -157,6 +160,9 @@ chi1 = cs2(n, thist1, ddof=2)
 thist2 = t_dist_values(n2, bins2, params_mean2)
 chi2 = cs2(n2, thist2, ddof=2)
 
+thist3 = t_dist_values(n3, bins3, params_mean3)
+chi3 = cs2(n3, thist3, ddof=2)
+
 def make_txt_chisq(chisq, label):
     textstr = '\n'.join((
         str(label.upper()),
@@ -168,6 +174,6 @@ def make_txt_chisq(chisq, label):
     ))
     return textstr
 
-textstr = make_txt_chisq(chi1, "Raw Interpolation Residuals Chi-Squared") + "\n\n" + make_txt_chisq(chi2, "Crosshatch-Bandpassed Residuals Chi-Squared")
+textstr = make_txt_chisq(chi1, "Raw Interpolation Residuals Chi-Squared") + "\n\n" + make_txt_chisq(chi2, "Crosshatch-Bandpassed Residuals Chi-Squared") + "\n\n" + make_txt_chisq(chi3, "Annulus-Bandpassed Residuals Chi-Squared")
 print()
 print(textstr)

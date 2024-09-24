@@ -78,7 +78,9 @@ class honours_plot:
 
         return image
     
-    def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="gist_rainbow", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs", return_color=False):
+    def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="coolwarm", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs", return_color=False):
+        #plt.rcParams.update({'font.size': 13})
+
         b_list = rms['ra_dec_obj'].galactic.b
 
         colormap = plt.colormaps[color_map]
