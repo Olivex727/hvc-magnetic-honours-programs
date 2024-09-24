@@ -1,26 +1,90 @@
+Sample 953 of 1000
+Sample 954 of 1000
+Sample 955 of 1000
+Sample 956 of 1000
+Sample 957 of 1000
+Sample 958 of 1000
+Sample 959 of 1000
+Sample 960 of 1000
+Sample 961 of 1000
+Sample 962 of 1000
+Sample 963 of 1000
+Sample 964 of 1000
+Sample 965 of 1000
+Sample 966 of 1000
+Sample 967 of 1000
+Sample 968 of 1000
+Sample 969 of 1000
+Sample 970 of 1000
+Sample 971 of 1000
+Sample 972 of 1000
+Sample 973 of 1000
+Sample 974 of 1000
+Sample 975 of 1000
+Sample 976 of 1000
+Sample 977 of 1000
+Sample 978 of 1000
+Sample 979 of 1000
+Sample 980 of 1000
+Sample 981 of 1000
+Sample 982 of 1000
+Sample 983 of 1000
+Sample 984 of 1000
+Sample 985 of 1000
+Sample 986 of 1000
+Sample 987 of 1000
+Sample 988 of 1000
+Sample 989 of 1000
+Sample 990 of 1000
+Sample 991 of 1000
+Sample 992 of 1000
+Sample 993 of 1000
+Sample 994 of 1000
+Sample 995 of 1000
+Sample 996 of 1000
+Sample 997 of 1000
+Sample 998 of 1000
+Sample 999 of 1000
 RAW INTERPOLATION RESIDUALS T-DIST
 |--------------------------------------|
 | Parameter          | Mean   | Stdev  |
 |--------------------------------------|
-| Degrees of Freedom | 1.0397 | 0.0040 |
-| Centerpoint        | 1.4688 | 0.1575 |
-| Internal Scale     | 14.240 | 0.0602 |
+| Degrees of Freedom | 1.0396 | 0.0039 |
+| Centerpoint        | 1.4607 | 0.1896 |
+| Internal Scale     | 14.242 | 0.0606 |
 |--------------------------------------|
 
 CROSSHATCH-BANDPASSED RESIDUALS T-DIST
 |--------------------------------------|
 | Parameter          | Mean   | Stdev  |
 |--------------------------------------|
-| Degrees of Freedom | 1.0463 | 0.0039 |
-| Centerpoint        | 1.6449 | 0.0462 |
-| Internal Scale     | 14.463 | 0.0607 |
+| Degrees of Freedom | 1.0464 | 0.0039 |
+| Centerpoint        | 1.6481 | 0.0472 |
+| Internal Scale     | 14.465 | 0.0608 |
 |--------------------------------------|
 
 ANNULUS-BANDPASSED RESIDUALS T-DIST
 |--------------------------------------|
 | Parameter          | Mean   | Stdev  |
 |--------------------------------------|
-| Degrees of Freedom | 1.0541 | 0.0038 |
-| Centerpoint        | 1.6233 | 0.1548 |
-| Internal Scale     | 14.666 | 0.0620 |
+| Degrees of Freedom | 1.0538 | 0.0040 |
+| Centerpoint        | 1.6165 | 0.1948 |
+| Internal Scale     | 14.669 | 0.0630 |
 |--------------------------------------|
+
+RAW INTERPOLATION RESIDUALS CHI-SQUARED
+----------------------
+| Statistic | 0.01432    |
+| p-value   | 1.044e-166 |
+----------------------
+
+CROSSHATCH-BANDPASSED RESIDUALS CHI-SQUARED
+----------------------
+| Statistic | 0.0146    |
+| p-value   | 2.671e-166 |
+----------------------
+
+ANNULUS-BANDPASSED RESIDUALS CHI-SQUARED
+----------------------
+| Statistic | 0.01385    |
+| p-value   | 2.105e-167 |

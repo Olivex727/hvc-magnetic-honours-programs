@@ -86,7 +86,7 @@ params_mean3, params_std3 = bootstrap_to_t(rm_column3, "Annulus-Bandpassed Resid
 bins = np.linspace(-100, 100, 100)
 n, bins, patches = plt.hist(rm_column, bins=bins, density=True, edgecolor='none', color=[0.8, 0.1, 0.1, 0.4], label="Raw Interpolation Residuals")
 n2, bins2, patches2 = plt.hist(rm_column2, bins=bins, density=True, edgecolor='none', color=[0.1, 0.8, 0.1, 0.4], label="Crosshatch-Bandpassed Residuals")
-n3, bins3, patches3 = plt.hist(rm_column2, bins=bins, density=True, edgecolor='none', color=[0.1, 0.1, 0.8, 0.4], label="Annulus-Bandpassed Residuals")
+n3, bins3, patches3 = plt.hist(rm_column3, bins=bins, density=True, edgecolor='none', color=[0.1, 0.1, 0.8, 0.4], label="Annulus-Bandpassed Residuals")
 
 # Adding x and y axis labels
 plt.xlabel(r'RM Residuals [rad m$^{-2}$]')
@@ -147,11 +147,11 @@ def cs(n, y, ddof=2):
     csq = chisq(n, np.sum(n)/np.sum(y) * y, ddof=ddof)
     return [csq[0], 1 - csq[1]]
 
-from scipy.stats import chi2
+from scipy.stats import chi2 as chisqsci
 
 def cs2(n, y, ddof=3):
     stat = np.sum((n-y)**2 / y)
-    pv = chi2.cdf(stat, len(n)-ddof)
+    pv = chisqsci.cdf(stat, len(n)-ddof)
     return [stat, pv]
 
 thist1 = t_dist_values(n, bins, params_mean1)
