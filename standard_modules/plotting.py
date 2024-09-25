@@ -70,7 +70,7 @@ class honours_plot:
         honours_plot.plot_RMs(rms, scale=scale)
         image = honours_plot.plot_fits(image, False)
 
-        if pixel_corners: plt.scatter((pixel_corners[2][0]-pixel_corners[1][0]),(pixel_corners[2][1]-pixel_corners[0][1]), marker='x', color=(0, 0, 0, 1))
+        if pixel_corners: plt.scatter((pixel_corners[2][0]-pixel_corners[1][0]),(pixel_corners[2][1]-pixel_corners[0][1]), marker='x', color=(0, 1, 0, 1))
         
         if show:
             plt.colorbar(image, label=r"[${\log}_{10}(N_{HI}/cm^{-1})$]")
@@ -174,11 +174,14 @@ class honours_plot:
     def plot_multiple_HVCs(snapshots, scale=1, size=6, show=True, add_circles=False, average=False):
         ny_plots = int(len(snapshots) / 3)
 
-        plt.figure(figsize=(size*3, ny_plots*size))
+        fig = plt.figure(figsize=(size*3, ny_plots*size))
 
         plt.rcParams.update({'font.size': (1+size)*2})
 
         plt.tight_layout(pad=0)
+
+        image = 0
+        ax = []
 
         for s in range(len(snapshots)):
             snapshot = snapshots[s]
@@ -193,11 +196,11 @@ class honours_plot:
                 snapshot["RMs"]["pixel location y"],
                 snapshot["RMs"]["RM"] - interpolation
                 ])
-            plt.subplot(ny_plots, 3, s+1)
+            ax.append(plt.subplot(ny_plots, 3, s+1))
             plt.axis([0, snapshot['HI'].shape[0]-2, 0, snapshot['HI'].shape[1]-2])
             plt.tight_layout(w_pad=0, h_pad=1)
             plt.margins(tight=True)
-            honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale)
+            image = honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale)
             plt.xticks([])
             plt.yticks([])
             if add_circles:
@@ -209,7 +212,15 @@ class honours_plot:
 
                 circle = plt.Circle((sum(xlim)/2, sum(ylim)/2), (average/maximum)*sum(xlim)/4, color='black', fill=False)
                 plt.gca().add_patch(circle)
-        
+
+        ax[-1].set_visible(False)
+        ax[-2].set_visible(False)
+
+        # fig.subplots_adjust(right=0.8)
+        plt.rcParams.update({'font.size': 20})
+        cbar_ax = fig.add_axes([1.05, 0.05, 0.025, 0.9])
+        fig.colorbar(image, cax=cbar_ax, label=r"HI Intensity [${\log}_{10}(N_{HI}/cm^{-1})$]")
+
         if show:
             plt.show()
 
