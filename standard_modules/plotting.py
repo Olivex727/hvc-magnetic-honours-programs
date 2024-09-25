@@ -130,7 +130,7 @@ class honours_plot:
     def plot_RM_histogram_single(set_1, set_2, set_1_name="", set_2_name="", title="", bounds=(-100,100), bins=100, show=True, ylabel="", xlabel=r"Faraday depth [$rad m^{-2}$]", maximum=0, second=False, legend_size=14):
 
         if not second:
-            y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
+            y, x, _ = plt.hist(set_1-set_2, bins, bounds, label="Residual (Corrected) RMs", color=[0.1, 0.1, 0.8, 0.4], density=True)
             if not maximum: maximum = y.max()*1.05
         elif set_2_name:
             y, x, _ = plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4], density=True)
@@ -145,10 +145,10 @@ class honours_plot:
             plt.hist(set_2, bins, bounds, label=set_2_name, color=[0.1, 0.8, 0.1, 0.4], density=True)
             plt.ylim(0, maximum)
         else:
-            plt.hist(set_1-set_2, bins, bounds, label="Residuals", color=[0.1, 0.1, 0.8, 0.4], density=True)
+            plt.hist(set_1-set_2, bins, bounds, label="Residual (Corrected) RMs", color=[0.1, 0.1, 0.8, 0.4], density=True)
             plt.ylim(0, maximum)
 
-        plt.legend(fontsize=legend_size, loc='upper right')
+        plt.legend(fontsize=legend_size, loc='upper left')
         if ylabel: plt.ylabel(ylabel)
         if xlabel: plt.xlabel(xlabel)
         if title: plt.title(title)
