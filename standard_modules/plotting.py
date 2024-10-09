@@ -209,6 +209,10 @@ class honours_plot:
             image = honours_plot.plot_fits_RM_overlay(rm_overlay, snapshot["HI"], show=False, index=snapshot["HVC"]["Name"], pixel_corners=snapshot["HI_pixel_corners"], scale=scale)
             plt.xticks([])
             plt.yticks([])
+
+            # Add text
+            plt.text(snapshot['HI'].shape[0]-2, 0, "Centre = (l=10°, b=10°), R = 1°", rotation=270) #fontsize=
+
             if add_circles:
                 xlim = plt.xlim()
                 ylim = plt.ylim()
