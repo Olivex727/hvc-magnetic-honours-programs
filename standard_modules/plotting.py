@@ -5,6 +5,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from scipy.stats import binned_statistic_2d as bin2d
 
 class honours_plot:
 
@@ -78,14 +79,19 @@ class honours_plot:
 
         return image
     
-    def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="coolwarm", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs", return_color=False):
+    def plot_colourspace_glat(rms, show=True, scale=0.1, color_map="coolwarm", x_col='RM', y_col="interpolation_raw", show_colorbar=True, xlabel=r"Faraday depth (Actual) [$rad m^{-2}$)]", ylabel=r"Faraday depth (Interpolation) [$rad m^{-2}$]", title="Comparison of RMs", return_color=False, bins=75):
         #plt.rcParams.update({'font.size': 13})
 
-        b_list = rms['ra_dec_obj'].galactic.b
+        b_list = np.abs(rms['ra_dec_obj'].galactic.b.data)
 
         colormap = plt.colormaps[color_map]
 
-        scatter = plt.scatter(rms[x_col], rms[y_col], marker='s', s=scale, c=b_list, cmap=colormap)#colors)#, xerr=filtered['faraday_depth_err_radmm'], yerr=filtered['interpolation_err'], ecolor = "black")
+        binstat, x, y, _ = bin2d(np.nan_to_num(rms[x_col]).data, np.nan_to_num(rms[y_col].data), np.nan_to_num(b_list), statistic='max', bins=bins, range=[[-400, 400], [-400, 400]]) #(lambda x: np.percentile(x, 75))
+
+        scatter = plt.imshow(binstat.T, origin='lower', aspect='auto', extent=[x[0], x[-1], y[0], y[-1]], cmap=colormap)
+
+        #scatter = plt.scatter(rms[x_col], rms[y_col], marker='s', s=scale, c=b_list, cmap=colormap)#colors)#, xerr=filtered['faraday_depth_err_radmm'], yerr=filtered['interpolation_err'], ecolor = "black")
+
         if show_colorbar: plt.colorbar(scatter, label=r"Galactic Latitude [$deg$]")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
