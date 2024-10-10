@@ -210,12 +210,20 @@ class honours_plot:
             plt.xticks([])
             plt.yticks([])
 
+            locs = (
+                snapshot["HVC"]["SkyCoord"].galactic.l.deg,
+                snapshot["HVC"]["SkyCoord"].galactic.b.deg,
+                (snapshot["HVC"]["dx"]+snapshot["HVC"]["dy"])/2
+            )
+
             # Add text
-            plt.text(snapshot['HI'].shape[0]-2, 0, "Centre = (l=10°, b=10°), R = 1°", rotation=270) #fontsize=
+            plt.text(snapshot['HI'].shape[0]-2, 0, "Centre = (l=%.2f°, b=%.2f°), $\delta x$ = %.1f°" % locs,  rotation=270, fontsize=14) #
 
             if add_circles:
                 xlim = plt.xlim()
                 ylim = plt.ylim()
+
+                print(xlim)
 
                 maximum = max(snapshot["HVC"]["dx"], snapshot["HVC"]["dy"])
                 average = (snapshot["HVC"]["dx"]+snapshot["HVC"]["dy"])/2
